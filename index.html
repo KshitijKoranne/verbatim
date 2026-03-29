@@ -317,6 +317,15 @@ footer {
   font-family: 'DM Mono', monospace; font-size: 9px;
   letter-spacing: .1em; color: rgba(240,236,224,.18);
 }
+.f-made {
+  font-family: 'DM Mono', monospace; font-size: 9px;
+  letter-spacing: .1em; color: rgba(240,236,224,.22);
+}
+.f-kjr {
+  color: rgba(200,184,46,.55); text-decoration: none;
+  transition: color .2s;
+}
+.f-kjr:hover { color: var(--gold); }
 .f-link {
   font-family: 'DM Mono', monospace; font-size: 9px;
   letter-spacing: .14em; text-transform: uppercase;
@@ -446,17 +455,23 @@ footer {
 <footer>
   <div class="f-logo">VERBATIM</div>
   <div class="f-copy">Free forever · No account · No ads</div>
+  <div class="f-made">Made with ♥ in India by <a href="https://kjrlabs.in" target="_blank" rel="noopener" class="f-kjr">KJR Labs</a></div>
   <a href="app.html" class="f-link">Open app →</a>
 </footer>
 
 <script>
 // ── PWA STANDALONE REDIRECT ──
-// If already installed as PWA and opened via home screen icon,
-// skip the landing page and go straight to the wall.
-if (
-  window.navigator.standalone === true ||
-  window.matchMedia('(display-mode: standalone)').matches
-) {
+// Only redirect if genuinely running as installed PWA.
+// navigator.standalone = true  → iOS Safari, installed to home screen
+// display-mode: standalone     → Android Chrome, installed PWA
+// We exclude desktop browsers where this can fire incorrectly.
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const isAndroid = /android/i.test(navigator.userAgent);
+const isMobileStandalone =
+  (isIOS && window.navigator.standalone === true) ||
+  (isAndroid && window.matchMedia('(display-mode: standalone)').matches);
+
+if (isMobileStandalone) {
   window.location.replace('app.html');
 }
 
