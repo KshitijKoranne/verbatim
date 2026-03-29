@@ -1222,9 +1222,11 @@ document.getElementById('lb-x').addEventListener('click',closeLB);
 // Share
 document.getElementById('lb-share').addEventListener('click',async()=>{
   if(!currentLBQuote)return;
-  const text=`"${currentLBQuote.t}" — ${currentLBQuote.a}`;
+  const siteUrl='https://verbatim.vercel.app';
+  const quote=`"${currentLBQuote.t}" — ${currentLBQuote.a}`;
+  const text=`${quote}\n\nExplore the wall → ${siteUrl}`;
   if(navigator.share){
-    try { await navigator.share({title:'Verbatim',text}); }
+    try { await navigator.share({title:'Verbatim',text,url:siteUrl}); }
     catch{}
   } else {
     await navigator.clipboard.writeText(text).catch(()=>{});
@@ -1235,7 +1237,9 @@ document.getElementById('lb-share').addEventListener('click',async()=>{
 // Copy
 document.getElementById('lb-copy').addEventListener('click',async()=>{
   if(!currentLBQuote)return;
-  const text=`"${currentLBQuote.t}" — ${currentLBQuote.a}`;
+  const siteUrl='https://verbatim.vercel.app';
+  const quote=`"${currentLBQuote.t}" — ${currentLBQuote.a}`;
+  const text=`${quote}\n\nExplore the wall → ${siteUrl}`;
   try { await navigator.clipboard.writeText(text); showToast('Copied!'); }
   catch{ showToast('Copy failed'); }
 });
