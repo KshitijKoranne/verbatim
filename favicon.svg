@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <style>
+      .q { font-family: Georgia, serif; font-size: 480px; font-weight: bold;
+           fill: #c8b82e; }
+    </style>
+  </defs>
+  <rect width="512" height="512" fill="#1a1c0e" rx="80"/>
+  <text class="q" x="30" y="440">“</text>
+</svg>
