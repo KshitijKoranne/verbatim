@@ -3,20 +3,136 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Verbatim — An infinite, scrollable wall of the world's greatest quotes. No algorithm. No feed. Just words, given space. Free PWA for iPhone and Android.">
-<meta name="keywords" content="quotes app, quote wall, inspirational quotes, philosophy quotes, design quotes, best quotes, quote mosaic, PWA quotes app">
-<meta property="og:title" content="Verbatim — Infinite quotes. No algorithm.">
-<meta property="og:description" content="An infinite scrollable wall of the world's greatest words. Drag. Explore. Install free on any device.">
+
+<!-- ── PRIMARY SEO ── -->
+<title>Verbatim — Infinite Quotes. No Algorithm.</title>
+<meta name="description" content="Verbatim is a free infinite quote wall — hundreds of the world's greatest quotes from philosophy, design, science and literature, displayed in a living typographic mosaic. No algorithm. No account. Install free on iPhone and Android.">
+<meta name="keywords" content="quotes app, inspirational quotes, best quotes ever, philosophy quotes, design quotes, quote wall, infinite quotes, free quotes app, PWA quotes, quotes without algorithm, famous quotes, wisdom quotes, life quotes">
+<meta name="robots" content="index, follow">
+<meta name="author" content="KJR Labs">
+<link rel="canonical" href="https://verbatim-quote.vercel.app/">
+<link rel="sitemap" type="application/xml" href="/sitemap.xml">
+
+<!-- ── OPEN GRAPH (Facebook, WhatsApp, LinkedIn) ── -->
 <meta property="og:type" content="website">
-<meta property="og:image" content="icons/icon-512.png">
+<meta property="og:site_name" content="Verbatim">
+<meta property="og:title" content="Verbatim — Infinite Quotes. No Algorithm.">
+<meta property="og:description" content="Hundreds of the world's greatest quotes in one infinite, scrollable wall. Drag through. Get lost. Install free on any device.">
+<meta property="og:url" content="https://verbatim-quote.vercel.app/">
+<meta property="og:image" content="https://verbatim-quote.vercel.app/icons/icon-512.png">
+<meta property="og:image:width" content="512">
+<meta property="og:image:height" content="512">
+<meta property="og:image:alt" content="Verbatim — A wall of words">
+<meta property="og:locale" content="en_US">
+
+<!-- ── TWITTER / X CARD ── -->
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Verbatim — Infinite quotes. No algorithm.">
-<meta name="twitter:description" content="An infinite scrollable wall of the world's greatest words. Free. No account. No feed.">
+<meta name="twitter:site" content="@kjrlabs">
+<meta name="twitter:title" content="Verbatim — Infinite Quotes. No Algorithm.">
+<meta name="twitter:description" content="Hundreds of the world's greatest quotes in one infinite, scrollable wall. Free. No account. No feed.">
+<meta name="twitter:image" content="https://verbatim-quote.vercel.app/icons/icon-512.png">
+<meta name="twitter:image:alt" content="Verbatim quote wall">
+
+<!-- ── PWA / MOBILE ── -->
 <meta name="theme-color" content="#f0ece0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Verbatim">
+
+<!-- ── ICONS ── -->
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="icon" type="image/x-icon" href="favicon.ico">
-<link rel="apple-touch-icon" href="icons/icon-152.png">
-<title>Verbatim — Infinite quotes. No algorithm.</title>
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png">
+<link rel="manifest" href="manifest.json">
+
+<!-- ── JSON-LD STRUCTURED DATA ── -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebApplication",
+      "@id": "https://verbatim-quote.vercel.app/#app",
+      "name": "Verbatim",
+      "description": "An infinite, scrollable mosaic of the world's greatest quotes. No algorithm. No account. Free PWA installable on iPhone and Android.",
+      "url": "https://verbatim-quote.vercel.app/",
+      "applicationCategory": "LifestyleApplication",
+      "operatingSystem": "Any",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "author": {
+        "@type": "Organization",
+        "name": "KJR Labs",
+        "url": "https://kjrlabs.in"
+      },
+      "featureList": [
+        "Infinite scrollable quote wall",
+        "No algorithm or ranking",
+        "Installable as PWA on iPhone and Android",
+        "Works offline",
+        "No account required",
+        "Free forever"
+      ],
+      "screenshot": "https://verbatim-quote.vercel.app/icons/icon-512.png"
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://verbatim-quote.vercel.app/#website",
+      "url": "https://verbatim-quote.vercel.app/",
+      "name": "Verbatim",
+      "description": "Infinite quotes. No algorithm.",
+      "publisher": {
+        "@type": "Organization",
+        "name": "KJR Labs",
+        "url": "https://kjrlabs.in"
+      }
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What is Verbatim?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Verbatim is a free web app that displays hundreds of the world's greatest quotes in an infinite, scrollable typographic mosaic. There is no algorithm, no feed, and no account required."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is Verbatim free?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes, Verbatim is completely free. No subscription, no account, no ads — free forever."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I install Verbatim on my iPhone or Android?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. Verbatim is a Progressive Web App (PWA). On iPhone, open it in Safari, tap Share, then Add to Home Screen. On Android, open it in Chrome, tap the menu, then Add to Home Screen. It opens fullscreen like a native app."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does Verbatim work offline?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. Once installed, Verbatim caches its content via a service worker and works without an internet connection."
+          }
+        }
+      ]
+    }
+  ]
+}
+</script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Lora:ital,wght@0,400;0,500;1,400&family=DM+Mono:wght@400;500&family=Oswald:wght@600;700&display=swap" rel="stylesheet">
 
