@@ -1222,7 +1222,7 @@ document.getElementById('lb-x').addEventListener('click',closeLB);
 // Share
 document.getElementById('lb-share').addEventListener('click',async()=>{
   if(!currentLBQuote)return;
-  const siteUrl='https://verbatim.vercel.app';
+  const siteUrl='https://verbatim-quote.vercel.app';
   const quote=`"${currentLBQuote.t}" — ${currentLBQuote.a}`;
   const text=`${quote}\n\nExplore the wall → ${siteUrl}`;
   if(navigator.share){
@@ -1237,7 +1237,7 @@ document.getElementById('lb-share').addEventListener('click',async()=>{
 // Copy
 document.getElementById('lb-copy').addEventListener('click',async()=>{
   if(!currentLBQuote)return;
-  const siteUrl='https://verbatim.vercel.app';
+  const siteUrl='https://verbatim-quote.vercel.app';
   const quote=`"${currentLBQuote.t}" — ${currentLBQuote.a}`;
   const text=`${quote}\n\nExplore the wall → ${siteUrl}`;
   try { await navigator.clipboard.writeText(text); showToast('Copied!'); }
