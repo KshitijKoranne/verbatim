@@ -1,48 +1,27 @@
 # Verbatim
 
-**A Wall of Words** — an infinite, scrollable masonry mosaic of the world's greatest quotes.
+**A living wall of words.**
 
-## What it is
+Verbatim is an infinite typographic mosaic — hundreds of quotes from history's greatest minds, arranged in a masonry grid that breathes, scrolls, and evolves on its own.
 
-Verbatim is a Progressive Web App (PWA) that displays hundreds of curated quotes in a living, typographic wall. Quotes are rendered in 12 different Google Fonts, arranged in a true masonry grid, and refresh with a card-flip animation every 15–40 seconds.
+Every visit is different. Every tile is a different voice, a different weight, a different font. Quotes flip quietly in the background as you explore. Nothing is curated by an algorithm. Nothing is ranked. Just words, given space to exist.
 
-## Features
+---
 
-- **True masonry layout** — 12 columns, each tile's height driven by its content
-- **Bidirectional scroll** — pan horizontally and vertically across 3600px of quotes
-- **Pinch to zoom** — 100% (12 cols overview) → 150% (8 cols zoomed in)
-- **Card-flip animation** — tiles in view refresh with new quotes every 15–40s
-- **Live quote APIs** — quotable.io, quote-garden, zenquotes (186 built-in fallback)
-- **12 Google Font voices** — Playfair Display, Oswald, Bebas Neue, Abril Fatface, Cormorant Garamond, and more
-- **Shuffle** — rebuilds the wall with a new random layout
-- **Share / Copy** — native share sheet on mobile, clipboard on desktop
-- **PWA** — installable on Android and iOS, works offline
-- **Difference-mode cursor** — always visible regardless of tile background color
+## What it does
 
-## Tech
+- Pulls from multiple live quote sources and blends them with a hand-picked library of 186 quotes across design, philosophy, writing, science, wit, and more
+- Arranges them in a true masonry grid — each tile sized by its content, not by a template
+- Renders each quote in one of 12 distinctive typefaces, matched to the character of the text
+- Quietly flips tiles in view every 15–40 seconds, so the wall is never the same twice
+- Works as a Progressive Web App — installable on any phone or desktop, works offline
 
-Pure HTML + CSS + JS. No framework, no build step, no dependencies.
+## The experience
 
-## Deploy
+Drag. Pan. Pinch to zoom in and out. Tap any quote to read it in full. Hit shuffle and watch the whole wall rearrange itself.
 
-### Netlify (drag and drop)
-1. Go to [netlify.com](https://netlify.com)
-2. Drag this folder onto the deploy zone
-3. Done
+There is no feed. No likes. No algorithm deciding what matters. Just an infinite wall of things worth saying.
 
-### Vercel (from GitHub)
-1. Import this repo at [vercel.com](https://vercel.com)
-2. No build command needed, output directory is `/`
-3. Deploy
+---
 
-### Local dev
-```bash
-python3 -m http.server 8080
-# open http://localhost:8080
-```
-
-> Note: Must be served over HTTP/HTTPS for PWA features (service worker, manifest). Opening `index.html` directly via `file://` will work for the visual but not PWA install or live APIs.
-
-## License
-
-MIT
+*Built with no frameworks. No dependencies. Just HTML, CSS, and JavaScript.*
