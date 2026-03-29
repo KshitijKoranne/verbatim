@@ -450,6 +450,16 @@ footer {
 </footer>
 
 <script>
+// ── PWA STANDALONE REDIRECT ──
+// If already installed as PWA and opened via home screen icon,
+// skip the landing page and go straight to the wall.
+if (
+  window.navigator.standalone === true ||
+  window.matchMedia('(display-mode: standalone)').matches
+) {
+  window.location.replace('app.html');
+}
+
 // ── SCROLL REVEAL ──
 const sObs = new IntersectionObserver(entries => {
   entries.forEach(e => {
