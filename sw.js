@@ -1,7 +1,7 @@
 const CACHE = 'verbatim-v1';
 const ASSETS = [
   '/',
-  '/index.html',
+  '/', '/index.html', '/app.html',
   '/manifest.json',
   '/sw.js',
   '/icons/icon-192.png',
@@ -59,7 +59,7 @@ self.addEventListener('fetch', e => {
           const clone = response.clone();
           caches.open(CACHE).then(cache => cache.put(e.request, clone));
           return response;
-        }).catch(() => caches.match('/index.html'));
+        }).catch(() => caches.match('/', '/index.html', '/app.html'));
       })
     );
   }
