@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Verbatim">
+<meta name="theme-color" content="#1a1c0e">
+<meta name="description" content="An infinite scrollable mosaic of the world's most powerful quotes.">
+<meta property="og:title" content="Verbatim — A Wall of Words">
+<meta property="og:type" content="website">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-152.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<title>VERBATIM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<!--
+  12 FONT VOICES — all heavy, distinctive:
+  A  Playfair Display 900    serif bold
+  B  Oswald 700              condensed caps
+  C  Cormorant Garamond 700i delicate italic
+  D  Libre Baskerville 700   sturdy serif
+  E  Bebas Neue              tall display caps
+  F  DM Serif Display i      display italic
+  G  Abril Fatface           fat slab serif
+  H  Alfa Slab One           chunky slab
+  I  Fjalla One              tight condensed
+  J  Righteous               retro geometric
+  K  Yeseva One              elegant display
+  L  Josefin Sans 700        art-deco sans
+-->
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,900;1,700&family=Oswald:wght@700&family=Cormorant+Garamond:ital,wght@1,700&family=Libre+Baskerville:wght@700&family=Bebas+Neue&family=DM+Serif+Display:ital@1&family=Abril+Fatface&family=Alfa+Slab+One&family=Fjalla+One&family=Righteous&family=Yeseva+One&family=Josefin+Sans:wght@700&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --seam: #0d0e08;
+  --gold: #c8b82e;
+  --cr:   #e4dfc8;
+  --bar-h: 48px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%;
+  background: var(--seam);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  touch-action: none;
+}
+
+/* ═══════════════════════════════════════
+   CURSOR — mix-blend-mode:difference
+   Automatically inverts against background.
+   White dot on dark tiles, dark on light tiles.
+   Always visible regardless of tile color.
+═══════════════════════════════════════ */
+@media (pointer: fine) { * { cursor: none !important; } }
+
+#cur-dot {
+  position: fixed; width: 8px; height: 8px;
+  background: #fff; border-radius: 50%;
+  pointer-events: none; z-index: 9999;
+  left: -40px; top: -40px;
+  transform: translate(-50%,-50%);
+  mix-blend-mode: difference;
+  transition: width .15s, height .15s;
+}
+#cur-ring {
+  position: fixed; width: 36px; height: 36px;
+  border: 1.5px solid #fff; border-radius: 50%;
+  pointer-events: none; z-index: 9998;
+  left: -40px; top: -40px;
+  transform: translate(-50%,-50%);
+  mix-blend-mode: difference;
+  opacity: .7;
+  transition: width .3s cubic-bezier(.22,1,.36,1),
+              height .3s cubic-bezier(.22,1,.36,1),
+              opacity .3s;
+}
+body.hovering #cur-dot  { width: 5px; height: 5px; }
+body.hovering #cur-ring { width: 56px; height: 56px; opacity: .45; }
+body.dragging #cur-dot  { width: 4px; height: 4px; }
+body.dragging #cur-ring { width: 22px; height: 22px; opacity: .9; }
+@media (pointer: coarse) { #cur-dot, #cur-ring { display: none; } }
+
+/* ═══════════════════════════════════════
+   TOP BAR
+═══════════════════════════════════════ */
+#bar {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: var(--bar-h);
+  background: #0d0e08;
+  display: flex; align-items: center;
+  padding: 0 16px; gap: 12px;
+  padding-top: env(safe-area-inset-top);
+  z-index: 500;
+}
+#bar-logo {
+  font-family: 'Oswald', sans-serif;
+  font-size: 17px; font-weight: 700;
+  letter-spacing: .28em; color: var(--gold);
+  flex-shrink: 0; margin-right: 8px;
+}
+/* Bar action buttons */
+.bar-btn {
+  font-family: 'DM Mono', monospace; font-size: 9px;
+  letter-spacing: .12em; text-transform: uppercase;
+  color: var(--gold); opacity: .45;
+  background: none; border: none;
+  padding: 6px 8px; flex-shrink: 0;
+  transition: opacity .2s;
+  display: flex; align-items: center; gap: 5px;
+}
+.bar-btn:hover { opacity: .9; }
+.bar-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.5; }
+#bar-count {
+  font-family: 'DM Mono', monospace; font-size: 9px;
+  letter-spacing: .12em; color: var(--gold); opacity: .3;
+  flex-shrink: 0; white-space: nowrap;
+}
+
+/* ── Zoom controls ── */
+#zoom-wrap {
+  display: flex; align-items: center; gap: 2px;
+  flex-shrink: 0; border: 1px solid rgba(200,184,46,.22);
+}
+.zoom-btn {
+  font-family: 'DM Mono', monospace; font-size: 14px; line-height: 1;
+  color: var(--gold); background: none; border: none;
+  width: 26px; height: 24px; display: flex; align-items: center; justify-content: center;
+  opacity: .5; transition: opacity .15s; flex-shrink: 0;
+}
+.zoom-btn:hover { opacity: 1; }
+.zoom-btn:disabled { opacity: .18; }
+#zoom-label {
+  font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: .1em;
+  color: var(--gold); opacity: .55; min-width: 34px; text-align: center;
+}
+
+/* ═══════════════════════════════════════
+   VIEWPORT + CANVAS
+═══════════════════════════════════════ */
+#vp {
+  position: fixed;
+  top: var(--bar-h); left: 0; right: 0; bottom: 0;
+  overflow: hidden;
+}
+/* #canvas is translated for pan, then scaled for zoom.
+   We apply both as a single transform in JS:
+   translate3d(panX, panY, 0) scale(zoom)
+   transform-origin MUST be top-left so scaling
+   keeps the top-left corner anchored correctly.    */
+#canvas {
+  position: absolute; top: 0; left: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+/* off-screen measure sandbox */
+#measure {
+  position: fixed; top: -9999px; left: -9999px;
+  visibility: hidden; pointer-events: none; z-index: -1;
+}
+
+/* ═══════════════════════════════════════
+   TILE — flip-card architecture
+   .tile      = absolute-positioned outer shell (keeps position/size)
+   .tile-inner = rotates on Y axis between two faces
+   .face.front = currently visible quote
+   .face.back  = next quote (pre-loaded, hidden until flip)
+═══════════════════════════════════════ */
+.tile {
+  position: absolute;
+  /* perspective on the outer shell keeps flip in 3D */
+  perspective: 900px;
+  /* fade-in on first entry into viewport */
+  opacity: 0; transform: translateY(10px);
+  transition: opacity .6s cubic-bezier(.22,1,.36,1),
+              transform .6s cubic-bezier(.22,1,.36,1);
+}
+.tile.in { opacity: 1; transform: translateY(0); }
+
+/* The rotating inner card */
+.tile-inner {
+  position: relative; width: 100%; height: 100%;
+  transform-style: preserve-3d;
+  transition: transform .7s cubic-bezier(.4, 0, .2, 1);
+  /* will-change only while flipping — set/removed in JS */
+}
+.tile.flipping .tile-inner { will-change: transform; }
+.tile.flipped  .tile-inner { transform: rotateY(180deg); }
+
+/* Both faces share the same space */
+.face {
+  position: absolute; inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  overflow: hidden;
+  padding: 18px 20px 16px;
+  display: flex; flex-direction: column;
+  justify-content: space-between;
+}
+.face.back { transform: rotateY(180deg); }
+
+/* Hover glow on the visible face */
+.face::before {
+  content: ''; position: absolute; inset: 0;
+  opacity: 0; pointer-events: none; transition: opacity .4s;
+  background: radial-gradient(ellipse 65% 55% at 32% 42%, rgba(200,184,46,.11) 0%, transparent 70%);
+}
+.tile:hover .face.front::before  { opacity: 1; }
+.tile.flipped:hover .face.back::before { opacity: 1; }
+
+/* Yellow/cream glow overrides */
+.bk-y .face::before { background: radial-gradient(ellipse 65% 55% at 32% 42%, rgba(255,255,255,.18) 0%, transparent 70%); }
+.bk-c .face::before { background: radial-gradient(ellipse 65% 55% at 32% 42%, rgba(0,0,0,.06) 0%, transparent 70%); }
+
+/* ── Backgrounds — applied to .face so both sides can differ ── */
+.bk-0 .face { background: #1e2010; } .bk-1 .face { background: #232514; }
+.bk-2 .face { background: #191b0c; } .bk-3 .face { background: #272918; }
+.bk-4 .face { background: #111208; } .bk-y .face { background: #c8b82e; }
+.bk-c .face { background: #eae6d0; }
+
+/* ── Quote text ── */
+.q-text { display: block; color: var(--cr); }
+
+.va .q-text { font-family:'Playfair Display',serif;     font-weight:900; line-height:1.14; }
+.vb .q-text { font-family:'Oswald',sans-serif;          font-weight:700; line-height:1.06; text-transform:uppercase; letter-spacing:.02em; }
+.vc .q-text { font-family:'Cormorant Garamond',serif;   font-weight:700; line-height:1.20; font-style:italic; }
+.vd .q-text { font-family:'Libre Baskerville',serif;    font-weight:700; line-height:1.18; }
+.ve .q-text { font-family:'Bebas Neue',sans-serif;                       line-height:.96;  text-transform:uppercase; letter-spacing:.03em; }
+.vf .q-text { font-family:'DM Serif Display',serif;                      line-height:1.16; font-style:italic; }
+.vg .q-text { font-family:'Abril Fatface',serif;                         line-height:1.14; }
+.vh .q-text { font-family:'Alfa Slab One',serif;                         line-height:1.12; }
+.vi .q-text { font-family:'Fjalla One',sans-serif;                       line-height:1.08; text-transform:uppercase; }
+.vj .q-text { font-family:'Righteous',sans-serif;                        line-height:1.14; }
+.vk .q-text { font-family:'Yeseva One',serif;                            line-height:1.16; }
+.vl .q-text { font-family:'Josefin Sans',sans-serif;   font-weight:700;  line-height:1.12; text-transform:uppercase; letter-spacing:.04em; }
+
+/* Dark tiles → cream text (already default) */
+/* Light tiles (yellow/cream) → dark text */
+.bk-y .q-text { color: #131400; }
+.bk-c .q-text { color: #181700; }
+
+/* ── Author / Meta ── */
+.q-meta { margin-top: 12px; }
+.q-rule { width: 18px; height: 1px; background: var(--gold); opacity: .38; margin-bottom: 6px; }
+.q-author { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:.15em; text-transform:uppercase; color:var(--gold); line-height:1.3; }
+.q-source { font-family:'DM Mono',monospace; font-size:8.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--gold); opacity:.35; margin-top:2px; }
+.bk-y .q-rule,.bk-y .q-author { color:rgba(0,0,0,.45); } .bk-y .q-rule { background:rgba(0,0,0,.25); } .bk-y .q-source { color:rgba(0,0,0,.28); }
+.bk-c .q-rule,.bk-c .q-author { color:rgba(0,0,0,.38); } .bk-c .q-rule { background:rgba(0,0,0,.2);  } .bk-c .q-source { color:rgba(0,0,0,.22); }
+
+
+/* ═══════════════════════════════════════
+   LIGHTBOX
+═══════════════════════════════════════ */
+#lb {
+  position: fixed; inset: 0; z-index: 800;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity .3s;
+  padding: 24px; padding-top: calc(24px + env(safe-area-inset-top));
+}
+#lb.open { opacity: 1; pointer-events: all; }
+#lb-bg { position:absolute; inset:0; background:rgba(5,6,2,.92); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); }
+#lb-card {
+  position:relative; z-index:1; max-width:580px; width:100%;
+  background:#1e2010; padding:40px 40px 34px;
+  border-left:3px solid var(--gold);
+  transform:translateY(14px) scale(.97);
+  transition:transform .35s cubic-bezier(.22,1,.36,1);
+}
+#lb.open #lb-card { transform:translateY(0) scale(1); }
+#lb-qt {
+  font-family:'Playfair Display',serif; font-size:clamp(19px,2.6vw,28px);
+  font-weight:900; line-height:1.22; color:var(--cr); margin-bottom:24px;
+}
+#lb-qt.caps  { font-family:'Oswald',sans-serif; font-weight:700; text-transform:uppercase; font-size:clamp(20px,2.4vw,30px); line-height:1.06; }
+#lb-qt.ital  { font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:700; font-size:clamp(22px,2.8vw,34px); }
+#lb-qt.bebas { font-family:'Bebas Neue',sans-serif; text-transform:uppercase; font-size:clamp(32px,3.8vw,52px); line-height:1.0; }
+#lb-qt.abril { font-family:'Abril Fatface',serif; font-size:clamp(22px,2.6vw,34px); }
+#lb-qt.alfa  { font-family:'Alfa Slab One',serif; font-size:clamp(20px,2.4vw,30px); }
+#lb-qt.fjalla{ font-family:'Fjalla One',sans-serif; text-transform:uppercase; font-size:clamp(22px,2.6vw,34px); line-height:1.06; }
+#lb-qt.right { font-family:'Righteous',sans-serif; font-size:clamp(20px,2.4vw,30px); }
+#lb-qt.yeseva{ font-family:'Yeseva One',serif; font-size:clamp(20px,2.4vw,30px); }
+#lb-qt.josefin{ font-family:'Josefin Sans',sans-serif; font-weight:700; text-transform:uppercase; letter-spacing:.04em; font-size:clamp(18px,2.2vw,26px); }
+#lb-rule { width:22px; height:1px; background:var(--gold); opacity:.45; margin-bottom:10px; }
+#lb-au   { font-family:'DM Mono',monospace; font-size:11px; letter-spacing:.17em; text-transform:uppercase; color:var(--gold); }
+#lb-src  { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--cr); opacity:.22; margin-top:4px; }
+#lb-actions { display:flex; gap:12px; margin-top:22px; }
+.lb-action {
+  font-family:'DM Mono',monospace; font-size:9px; letter-spacing:.14em;
+  text-transform:uppercase; background:none; border:1px solid rgba(200,184,46,.3);
+  color:var(--gold); padding:8px 14px; display:flex; align-items:center; gap:6px;
+  transition:background .2s, border-color .2s;
+}
+.lb-action:hover { background:rgba(200,184,46,.1); border-color:var(--gold); }
+.lb-action svg { width:12px; height:12px; fill:none; stroke:currentColor; stroke-width:1.8; }
+#lb-x { position:absolute; top:12px; right:14px; font-family:'DM Mono',monospace; font-size:9px; letter-spacing:.14em; color:var(--cr); opacity:.25; transition:opacity .2s; padding:6px; }
+#lb-x:hover { opacity:.8; }
+
+/* ═══════════════════════════════════════
+   TOAST NOTIFICATION
+═══════════════════════════════════════ */
+#toast {
+  position: fixed; bottom: calc(28px + env(safe-area-inset-bottom));
+  left: 50%; transform: translateX(-50%) translateY(60px);
+  background: #1e2010; border-top: 2px solid var(--gold);
+  font-family:'DM Mono',monospace; font-size:10px; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--cr); opacity:.85;
+  padding: 10px 18px; z-index: 900; white-space:nowrap;
+  transition: transform .4s cubic-bezier(.22,1,.36,1), opacity .4s;
+  pointer-events: none;
+}
+#toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ═══════════════════════════════════════
+   INSTALL BANNER
+═══════════════════════════════════════ */
+#ib {
+  position:fixed; bottom:calc(14px + env(safe-area-inset-bottom));
+  left:50%; transform:translateX(-50%) translateY(68px);
+  background:#1e2010; border-top:2px solid var(--gold);
+  padding:12px 18px; display:flex; align-items:center; gap:14px;
+  z-index:600; transition:transform .5s cubic-bezier(.22,1,.36,1);
+  max-width:calc(100vw - 28px);
+}
+#ib.show { transform:translateX(-50%) translateY(0); }
+#ib p    { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--cr); opacity:.55; white-space:nowrap; }
+#ib-btn  { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:.14em; text-transform:uppercase; background:var(--gold); color:#111; border:none; padding:7px 14px; flex-shrink:0; }
+#ib-x    { font-family:'DM Mono',monospace; font-size:10px; color:var(--cr); opacity:.2; flex-shrink:0; }
+
+/* ── HINT ── */
+#hint {
+  position:fixed; bottom:calc(18px + env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%);
+  font-family:'DM Mono',monospace; font-size:9px; letter-spacing:.22em; text-transform:uppercase;
+  color:var(--gold); opacity:0; pointer-events:none; animation:fh 7s 3s forwards; z-index:490;
+}
+@keyframes fh { 0%{opacity:0}12%{opacity:.45}80%{opacity:.45}100%{opacity:0} }
+</style>
+</head>
+<body>
+
+<div id="cur-dot"></div>
+<div id="cur-ring"></div>
+
+<!-- TOP BAR -->
+<div id="bar">
+  <div id="bar-logo">Verbatim</div>
+
+  <!-- Action buttons -->
+  <button class="bar-btn" id="btn-shuffle" title="Shuffle">
+    <svg viewBox="0 0 24 24"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+  </button>
+
+  <!-- Zoom controls -->
+  <div id="zoom-wrap">
+    <button class="zoom-btn" id="btn-zoom-out" title="Zoom out">−</button>
+    <div id="zoom-label">100%</div>
+    <button class="zoom-btn" id="btn-zoom-in" title="Zoom in">+</button>
+  </div>
+
+  <div id="bar-count">…</div>
+</div>
+
+<div id="vp"><div id="canvas"></div></div>
+<div id="measure"></div>
+<div id="hint">drag · scroll · tap to read</div>
+
+
+<!-- Lightbox -->
+<div id="lb">
+  <div id="lb-bg"></div>
+  <div id="lb-card">
+    <div id="lb-x">[ ESC ]</div>
+    <div id="lb-qt"></div>
+    <div id="lb-rule"></div>
+    <div id="lb-au"></div>
+    <div id="lb-src"></div>
+    <div id="lb-actions">
+      <button class="lb-action" id="lb-share">
+        <svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
+        Share
+      </button>
+      <button class="lb-action" id="lb-copy">
+        <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copy
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Install banner -->
+<div id="ib">
+  <p>Add to home screen</p>
+  <button id="ib-btn">Install</button>
+  <span id="ib-x">✕</span>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════════════
+//  300 BUILT-IN QUOTES with categories
+// ═══════════════════════════════════════════════════
+const POOL = [
+  // Design
+  {t:"Good design is obvious. Great design is transparent.",a:"Joe Sparano",s:"Design"},
+  {t:"Clear thinking made visible. Bad design is stupidity made visible.",a:"Edward Tufte",s:"Design"},
+  {t:"Have nothing in your house that you do not know to be useful, or believe to be beautiful.",a:"William Morris",s:"Design"},
+  {t:"Not to create art, but to be clear.",a:"Saul Steinberg",s:"Design"},
+  {t:"Design is gradually applying constraints until an elegant solution remains.",a:"Luke Wroblewski",s:"Design"},
+  {t:"The details are not the details. They make the design.",a:"Charles Eames",s:"Design"},
+  {t:"Simplicity is the ultimate sophistication.",a:"Leonardo da Vinci",s:"Design"},
+  {t:"Less is more.",a:"Ludwig Mies van der Rohe",s:"Design"},
+  {t:"Everything is designed. Few things are designed well.",a:"Brian Reed",s:"Design"},
+  {t:"Design is not just what it looks like. Design is how it works.",a:"Steve Jobs",s:"Design"},
+  {t:"To see takes time.",a:"Georgia O'Keeffe",s:"Design"},
+  {t:"Space is the breath of art.",a:"Frank Lloyd Wright",s:"Design"},
+  {t:"Form follows function.",a:"Louis Sullivan",s:"Design"},
+  {t:"The best interface is no interface.",a:"Golden Krishna",s:"Design"},
+  {t:"Art is not what you see, but what you make others see.",a:"Edgar Degas",s:"Design"},
+  {t:"Perfection is achieved not when there is nothing more to add, but when there is nothing left to take away.",a:"Antoine de Saint-Exupéry",s:"Design"},
+  {t:"In most people's vocabularies, design means veneer.",a:"Steve Jobs",s:"Design"},
+  {t:"Drawing is the honesty of the art. There is no possibility of cheating.",a:"Salvador Dalí",s:"Design"},
+  {t:"Style is a way to say who you are without having to speak.",a:"Rachel Zoe",s:"Design"},
+  // Philosophy
+  {t:"The unexamined life is not worth living.",a:"Socrates",s:"Philosophy"},
+  {t:"The only true wisdom is knowing you know nothing.",a:"Socrates",s:"Philosophy"},
+  {t:"We are what we repeatedly do. Excellence, then, is not an act but a habit.",a:"Aristotle",s:"Philosophy"},
+  {t:"The mind is not a vessel to be filled but a fire to be kindled.",a:"Plutarch",s:"Philosophy"},
+  {t:"We don't see things as they are, we see them as we are.",a:"Anaïs Nin",s:"Philosophy"},
+  {t:"I think, therefore I am.",a:"René Descartes",s:"Philosophy"},
+  {t:"To be or not to be — that is the question.",a:"William Shakespeare",s:"Philosophy"},
+  {t:"No man steps in the same river twice.",a:"Heraclitus",s:"Philosophy"},
+  {t:"Reality is merely an illusion, albeit a very persistent one.",a:"Albert Einstein",s:"Philosophy"},
+  {t:"Time is what we want most but what we use worst.",a:"William Penn",s:"Philosophy"},
+  {t:"The trouble is, you think you have time.",a:"Jack Kornfield",s:"Philosophy"},
+  {t:"It does not matter how slowly you go as long as you do not stop.",a:"Confucius",s:"Philosophy"},
+  {t:"The journey of a thousand miles begins with one step.",a:"Lao Tzu",s:"Philosophy"},
+  {t:"Hell is other people.",a:"Jean-Paul Sartre",s:"Philosophy"},
+  {t:"God is dead.",a:"Friedrich Nietzsche",s:"Philosophy"},
+  {t:"Man is condemned to be free.",a:"Jean-Paul Sartre",s:"Philosophy"},
+  {t:"One cannot step twice in the same river.",a:"Heraclitus",s:"Philosophy"},
+  {t:"The owl of Minerva spreads its wings only with the falling of the dusk.",a:"Hegel",s:"Philosophy"},
+  {t:"Be the change you wish to see in the world.",a:"Mahatma Gandhi",s:"Philosophy"},
+  {t:"An eye for an eye will only make the whole world blind.",a:"Mahatma Gandhi",s:"Philosophy"},
+  {t:"The present moment always will have been.",a:"Unknown",s:"Philosophy"},
+  {t:"Discipline is remembering what you want.",a:"David Campbell",s:"Philosophy"},
+  // Writing
+  {t:"Easy reading is damn hard writing.",a:"Nathaniel Hawthorne",s:"Writing"},
+  {t:"No tears in the writer, no tears in the reader.",a:"Robert Frost",s:"Writing"},
+  {t:"The first draft of anything is garbage.",a:"Ernest Hemingway",s:"Writing"},
+  {t:"Words are the most powerful drug used by mankind.",a:"Rudyard Kipling",s:"Writing"},
+  {t:"Writing is thinking. To write well is to think clearly.",a:"David McCullough",s:"Writing"},
+  {t:"The difference between the almost right word and the right word is the difference between lightning bug and lightning.",a:"Mark Twain",s:"Writing"},
+  {t:"If you tell the truth, you don't have to remember anything.",a:"Mark Twain",s:"Writing"},
+  {t:"The truth is rarely pure and never simple.",a:"Oscar Wilde",s:"Writing"},
+  {t:"Experience is simply the name we give our mistakes.",a:"Oscar Wilde",s:"Writing"},
+  {t:"Always forgive your enemies — nothing annoys them so much.",a:"Oscar Wilde",s:"Writing"},
+  {t:"I am not young enough to know everything.",a:"Oscar Wilde",s:"Writing"},
+  {t:"Be yourself; everyone else is already taken.",a:"Oscar Wilde",s:"Writing"},
+  {t:"The scariest moment is always just before you start.",a:"Stephen King",s:"Writing"},
+  {t:"If you don't have time to read, you don't have time to write.",a:"Stephen King",s:"Writing"},
+  {t:"There are three rules for writing. Unfortunately, no one can agree what they are.",a:"Somerset Maugham",s:"Writing"},
+  {t:"Either write something worth reading or do something worth writing.",a:"Benjamin Franklin",s:"Writing"},
+  {t:"Not all those who wander are lost.",a:"J.R.R. Tolkien",s:"Writing"},
+  {t:"The world breaks everyone, and afterward, some are strong at the broken places.",a:"Ernest Hemingway",s:"Writing"},
+  {t:"In the depth of winter, I finally learned that within me there lay an invincible summer.",a:"Albert Camus",s:"Writing"},
+  {t:"The medium is the message.",a:"Marshall McLuhan",s:"Writing"},
+  {t:"Never argue with stupid people — they will drag you down to their level and beat you with experience.",a:"Mark Twain",s:"Writing"},
+  // Science
+  {t:"Imagination is more important than knowledge.",a:"Albert Einstein",s:"Science"},
+  {t:"If you can't explain it simply, you don't understand it well enough.",a:"Albert Einstein",s:"Science"},
+  {t:"The first principle is that you must not fool yourself — and you are the easiest person to fool.",a:"Richard Feynman",s:"Science"},
+  {t:"The important thing is to not stop questioning.",a:"Albert Einstein",s:"Science"},
+  {t:"The universe is under no obligation to make sense to you.",a:"Neil deGrasse Tyson",s:"Science"},
+  {t:"An expert is someone who has made all the mistakes in a very narrow field.",a:"Niels Bohr",s:"Science"},
+  {t:"Any sufficiently advanced technology is indistinguishable from magic.",a:"Arthur C. Clarke",s:"Science"},
+  {t:"Two things are infinite: the universe and human stupidity.",a:"Albert Einstein",s:"Science"},
+  {t:"Creativity is intelligence having fun.",a:"Albert Einstein",s:"Science"},
+  {t:"A man who has never made a mistake has never tried anything new.",a:"Albert Einstein",s:"Science"},
+  {t:"Science is not only a disciple of reason but also one of romance and passion.",a:"Stephen Hawking",s:"Science"},
+  {t:"Reality is what it is, not what you want it to be.",a:"Richard Feynman",s:"Science"},
+  {t:"The good thing about science is that it's true whether or not you believe in it.",a:"Neil deGrasse Tyson",s:"Science"},
+  {t:"We are all made of star stuff.",a:"Carl Sagan",s:"Science"},
+  {t:"Somewhere, something incredible is waiting to be known.",a:"Carl Sagan",s:"Science"},
+  // Life
+  {t:"Life is what happens while you're busy making other plans.",a:"John Lennon",s:"Life"},
+  {t:"The purpose of life is a life of purpose.",a:"Robert Byrne",s:"Life"},
+  {t:"In the end, it's not the years in your life that count. It's the life in your years.",a:"Abraham Lincoln",s:"Life"},
+  {t:"Life is either a daring adventure or nothing at all.",a:"Helen Keller",s:"Life"},
+  {t:"You only live once, but if you do it right, once is enough.",a:"Mae West",s:"Life"},
+  {t:"Float like a butterfly, sting like a bee.",a:"Muhammad Ali",s:"Life"},
+  {t:"You miss 100% of the shots you don't take.",a:"Wayne Gretzky",s:"Life"},
+  {t:"Someday is not a day of the week.",a:"Denise Brennan-Nelson",s:"Life"},
+  {t:"Work is love made visible.",a:"Kahlil Gibran",s:"Life"},
+  {t:"The greatest glory lies not in never falling, but in rising every time we fall.",a:"Nelson Mandela",s:"Life"},
+  {t:"When the whole world is silent, even one voice becomes powerful.",a:"Malala Yousafzai",s:"Life"},
+  {t:"Do not go where the path may lead; go where there is no path and leave a trail.",a:"Ralph Waldo Emerson",s:"Life"},
+  {t:"Life is short. Do stuff that matters.",a:"Siqi Chen",s:"Life"},
+  {t:"The two most important days: the day you are born and the day you find out why.",a:"Mark Twain",s:"Life"},
+  {t:"We do not remember days; we remember moments.",a:"Cesare Pavese",s:"Life"},
+  {t:"Life is not measured by the number of breaths we take, but by the moments that take our breath away.",a:"Maya Angelou",s:"Life"},
+  {t:"You can't go back and change the beginning, but you can start where you are and change the ending.",a:"C.S. Lewis",s:"Life"},
+  // Success
+  {t:"Opportunity is missed by most people because it is dressed in overalls and looks like work.",a:"Thomas Edison",s:"Success"},
+  {t:"The only way to do great work is to love what you do.",a:"Steve Jobs",s:"Success"},
+  {t:"Move fast and learn things.",a:"Unknown",s:"Success"},
+  {t:"Stay hungry. Stay foolish.",a:"Stewart Brand",s:"Success"},
+  {t:"In the middle of every difficulty lies opportunity.",a:"Albert Einstein",s:"Success"},
+  {t:"It always seems impossible until it's done.",a:"Nelson Mandela",s:"Success"},
+  {t:"Deliver more than you promise.",a:"Anonymous",s:"Success"},
+  {t:"The secret of getting ahead is getting started.",a:"Mark Twain",s:"Success"},
+  {t:"Done is better than perfect.",a:"Sheryl Sandberg",s:"Success"},
+  {t:"I have not failed. I've just found 10,000 ways that won't work.",a:"Thomas Edison",s:"Success"},
+  {t:"Innovation distinguishes between a leader and a follower.",a:"Steve Jobs",s:"Success"},
+  {t:"The best revenge is massive success.",a:"Frank Sinatra",s:"Success"},
+  {t:"Believe you can and you're halfway there.",a:"Theodore Roosevelt",s:"Success"},
+  {t:"A year from now you may wish you had started today.",a:"Karen Lamb",s:"Success"},
+  {t:"The best way to predict the future is to create it.",a:"Peter Drucker",s:"Success"},
+  {t:"Success usually comes to those who are too busy to be looking for it.",a:"Henry David Thoreau",s:"Success"},
+  {t:"Don't watch the clock; do what it does. Keep going.",a:"Sam Levenson",s:"Success"},
+  {t:"The road to success and the road to failure are almost exactly the same.",a:"Colin R. Davis",s:"Success"},
+  {t:"Success is not how high you have climbed, but how you make a positive difference to the world.",a:"Roy T. Bennett",s:"Success"},
+  // Wit
+  {t:"Everyone has a plan until they get punched in the face.",a:"Mike Tyson",s:"Wit"},
+  {t:"For every complex problem there is an answer that is clear, simple, and wrong.",a:"H. L. Mencken",s:"Wit"},
+  {t:"A problem well stated is a problem half-solved.",a:"Charles Kettering",s:"Wit"},
+  {t:"Luck favors the prepared, darling.",a:"Edna Mode",s:"Wit"},
+  {t:"If you want to make God laugh, tell him about your plans.",a:"Woody Allen",s:"Wit"},
+  {t:"I have a dream.",a:"Martin Luther King Jr.",s:"Wit"},
+  {t:"That's one small step for man, one giant leap for mankind.",a:"Neil Armstrong",s:"Wit"},
+  {t:"True success is figuring out your life so you never have to be around jerks.",a:"John Waters",s:"Wit"},
+  {t:"Never delegate understanding.",a:"Charles Eames",s:"Wit"},
+  {t:"The pen is mightier than the sword.",a:"Edward Bulwer-Lytton",s:"Wit"},
+  {t:"Knowledge is power.",a:"Francis Bacon",s:"Wit"},
+  {t:"Clothes make the man. Naked people have little or no influence on society.",a:"Mark Twain",s:"Wit"},
+  {t:"I can resist everything except temptation.",a:"Oscar Wilde",s:"Wit"},
+  {t:"To lose one parent may be regarded as misfortune; to lose both looks like carelessness.",a:"Oscar Wilde",s:"Wit"},
+  {t:"The only way to get rid of a temptation is to yield to it.",a:"Oscar Wilde",s:"Wit"},
+  {t:"I have nothing to declare except my genius.",a:"Oscar Wilde",s:"Wit"},
+  {t:"Well-behaved women seldom make history.",a:"Laurel Thatcher Ulrich",s:"Wit"},
+  // Tech
+  {t:"Software is eating the world.",a:"Marc Andreessen",s:"Tech"},
+  {t:"First, solve the problem. Then, write the code.",a:"John Johnson",s:"Tech"},
+  {t:"It's not a bug — it's an undocumented feature.",a:"Anonymous",s:"Tech"},
+  {t:"Premature optimization is the root of all evil.",a:"Donald Knuth",s:"Tech"},
+  {t:"Making a product is hard. Making the team that makes it is harder.",a:"Unknown",s:"Tech"},
+  {t:"Product excellence is a culture, not a set of checkboxes.",a:"Unknown",s:"Tech"},
+  {t:"Your most unhappy customers are your greatest source of learning.",a:"Bill Gates",s:"Tech"},
+  {t:"Move fast and break things. Unless you are breaking things that matter.",a:"Mark Zuckerberg",s:"Tech"},
+  {t:"Walking on water and developing software from a specification are easy if both are frozen.",a:"Edward V. Berard",s:"Tech"},
+  {t:"Measuring programming progress by lines of code is like measuring aircraft building progress by weight.",a:"Bill Gates",s:"Tech"},
+  {t:"Any fool can write code that a computer can understand. Good programmers write code that humans can understand.",a:"Martin Fowler",s:"Tech"},
+  {t:"Code is like humor. When you have to explain it, it's bad.",a:"Cory House",s:"Tech"},
+  {t:"The most disruptive thing a startup can do is succeed.",a:"Unknown",s:"Tech"},
+  {t:"Make it work, make it right, make it fast.",a:"Kent Beck",s:"Tech"},
+  // Extra
+  {t:"Courage is not the absence of fear, but the triumph over it.",a:"Nelson Mandela",s:"Life"},
+  {t:"Jump off the cliff and build your wings on the way down.",a:"Ray Bradbury",s:"Life"},
+  {t:"The cave you fear to enter holds the treasure you seek.",a:"Joseph Campbell",s:"Life"},
+  {t:"Do one thing every day that scares you.",a:"Eleanor Roosevelt",s:"Life"},
+  {t:"Everything you've ever wanted is on the other side of fear.",a:"George Addair",s:"Life"},
+  {t:"What would you attempt if you knew you could not fail?",a:"Robert H. Schuller",s:"Life"},
+  {t:"Education is the most powerful weapon you can use to change the world.",a:"Nelson Mandela",s:"Life"},
+  {t:"Lead from the back and let others believe they are in front.",a:"Nelson Mandela",s:"Life"},
+  {t:"In order to be irreplaceable one must always be different.",a:"Coco Chanel",s:"Life"},
+  {t:"The future belongs to those who believe in the beauty of their dreams.",a:"Eleanor Roosevelt",s:"Life"},
+  {t:"It is not the mountain we conquer but ourselves.",a:"Sir Edmund Hillary",s:"Life"},
+  {t:"Whether you think you can or think you can't — you're right.",a:"Henry Ford",s:"Success"},
+  {t:"You are never too old to set another goal or to dream a new dream.",a:"C.S. Lewis",s:"Life"},
+  {t:"A room without books is like a body without a soul.",a:"Marcus Tullius Cicero",s:"Writing"},
+  {t:"There is a great satisfaction in building good tools for other people to use.",a:"Freeman Dyson",s:"Design"},
+  {t:"Every child is an artist. The problem is how to remain an artist once we grow up.",a:"Pablo Picasso",s:"Design"},
+  {t:"You can't use up creativity. The more you use, the more you have.",a:"Maya Angelou",s:"Writing"},
+  {t:"Character is what you are in the dark.",a:"Dwight L. Moody",s:"Philosophy"},
+  {t:"Only the shallow know themselves.",a:"Oscar Wilde",s:"Wit"},
+  {t:"Education is an admirable thing, but it is well to remember that nothing that is worth knowing can be taught.",a:"Oscar Wilde",s:"Wit"},
+  {t:"The only obligation which I have a right to assume is to do at any time what I think right.",a:"Henry David Thoreau",s:"Philosophy"},
+  {t:"Go confidently in the direction of your dreams.",a:"Henry David Thoreau",s:"Success"},
+  {t:"Not all readers become leaders, but all leaders are readers.",a:"Harry S. Truman",s:"Writing"},
+  {t:"Without music, life would be a mistake.",a:"Friedrich Nietzsche",s:"Life"},
+  {t:"In art, the hand can never execute anything higher than the heart can imagine.",a:"Ralph Waldo Emerson",s:"Design"},
+  {t:"Imagination is the beginning of creation.",a:"George Bernard Shaw",s:"Design"},
+  {t:"Be fluid. Treat each project differently. Be water, man.",a:"Unknown",s:"Design"},
+  {t:"The details are where the devil lives. And also where the craft is.",a:"Unknown",s:"Design"},
+  {t:"Focus on being productive instead of busy.",a:"Tim Ferriss",s:"Success"},
+  {t:"The key is not to prioritize what's on your schedule, but to schedule your priorities.",a:"Stephen Covey",s:"Success"},
+  {t:"If you spend too much time thinking about a thing, you'll never get it done.",a:"Bruce Lee",s:"Success"},
+  {t:"Absorb what is useful, discard what is not, add what is uniquely your own.",a:"Bruce Lee",s:"Philosophy"},
+  {t:"To hell with circumstances; I create opportunities.",a:"Bruce Lee",s:"Success"},
+  {t:"A goal without a plan is just a wish.",a:"Antoine de Saint-Exupéry",s:"Success"},
+  {t:"Vision without action is merely a dream. Action without vision just passes time.",a:"Joel A. Barker",s:"Success"},
+  {t:"The secret of change is to focus all your energy not on fighting the old, but on building the new.",a:"Socrates",s:"Philosophy"},
+  {t:"Light tomorrow with today.",a:"Elizabeth Barrett Browning",s:"Life"},
+  {t:"What we think, we become.",a:"Buddha",s:"Philosophy"},
+  {t:"Peace comes from within. Do not seek it without.",a:"Buddha",s:"Philosophy"},
+  {t:"Three things cannot be long hidden: the sun, the moon, and the truth.",a:"Buddha",s:"Philosophy"},
+  {t:"You yourself, as much as anybody in the entire universe, deserve your love and affection.",a:"Buddha",s:"Philosophy"},
+  {t:"The mind is everything. What you think you become.",a:"Buddha",s:"Philosophy"},
+];
+
+// ═══════════════════════════════════════════════════
+//  LIVE APIS — 4 sources, parallel with timeout
+// ═══════════════════════════════════════════════════
+async function timed(url, ms=4500) {
+  const c=new AbortController(), t=setTimeout(()=>c.abort(),ms);
+  try { const r=await fetch(url,{signal:c.signal}); clearTimeout(t); return r.ok?r:null; }
+  catch { clearTimeout(t); return null; }
+}
+async function fromQuotable() {
+  const r=await timed('https://api.quotable.io/quotes/random?limit=80');
+  if(!r) return [];
+  try { return (await r.json()).map(q=>({t:q.content,a:q.author,s:mapTag(q.tags||[])})); }
+  catch { return []; }
+}
+async function fromQuotable2() {
+  // Second call for more variety
+  const r=await timed('https://api.quotable.io/quotes/random?limit=60&tags=wisdom,success,life');
+  if(!r) return [];
+  try { return (await r.json()).map(q=>({t:q.content,a:q.author,s:mapTag(q.tags||[])})); }
+  catch { return []; }
+}
+async function fromQuoteGarden() {
+  const g=['wisdom','life','success','creativity','inspirational','philosophy'][0|Math.random()*6];
+  const r=await timed(`https://quote-garden.onrender.com/api/v3/quotes?genre=${g}&count=40`);
+  if(!r) return [];
+  try { return ((await r.json()).data||[]).map(q=>({t:q.quoteText,a:q.quoteAuthor||'Unknown',s:q.quoteGenre||'Life'})); }
+  catch { return []; }
+}
+async function fromZen() {
+  const r=await timed('https://zenquotes.io/api/quotes', 3500);
+  if(!r) return [];
+  try { const d=await r.json(); return Array.isArray(d)?d.slice(0,30).map(q=>({t:q.q,a:q.a,s:'Life'})):[]; }
+  catch { return []; }
+}
+
+function mapTag(tags) {
+  const map = {
+    technology:'Tech', science:'Science', philosophy:'Philosophy',
+    success:'Success', life:'Life', writing:'Writing', design:'Design',
+    wisdom:'Philosophy', inspirational:'Success', humor:'Wit',
+    happiness:'Life', motivation:'Success', leadership:'Success',
+    creativity:'Design', art:'Design', business:'Success',
+    knowledge:'Philosophy', education:'Writing', literature:'Writing',
+    friendship:'Life', love:'Life', nature:'Life', time:'Philosophy',
+    courage:'Life', faith:'Philosophy', future:'Success', change:'Success',
+    mind:'Philosophy', truth:'Philosophy', freedom:'Philosophy',
+    health:'Life', family:'Life', work:'Success',
+  };
+  for (const tag of tags) {
+    const t = tag.toLowerCase();
+    if (map[t]) return map[t];
+  }
+  return 'Life';
+}
+
+function dedup(arr) {
+  const s=new Set();
+  return arr.filter(q=>{ const k=q.t.slice(0,30).toLowerCase().replace(/\s/g,''); if(s.has(k))return false; s.add(k);return true; });
+}
+function shuffle(a) {
+  const b=[...a];
+  for(let i=b.length-1;i>0;i--){const j=0|Math.random()*(i+1);[b[i],b[j]]=[b[j],b[i]];}
+  return b;
+}
+function setStatus(t){const el=document.getElementById('bar-count');el.textContent=t;}
+
+async function loadAll() {
+  setStatus('Loading…');
+  const results=await Promise.allSettled([fromQuotable(),fromQuotable2(),fromQuoteGarden(),fromZen()]);
+  const live=results.filter(r=>r.status==='fulfilled').flatMap(r=>r.value)
+    .filter(q=>q.t&&q.t.length>10&&q.t.length<300);
+  const all=dedup(shuffle([...live,...POOL]));
+  setStatus(`${all.length} quotes`);
+  return all;
+}
+
+// ═══════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════
+let ALL_QUOTES = [];
+let currentLBQuote = null;
+
+// ═══════════════════════════════════════════════════
+//  STYLE ASSIGNMENT — 12 font voices
+// ═══════════════════════════════════════════════════
+const BG_POOL=[
+  'bk-0','bk-0','bk-0','bk-0','bk-0','bk-0',
+  'bk-1','bk-1','bk-1','bk-1',
+  'bk-2','bk-2','bk-2',
+  'bk-3','bk-3','bk-3',
+  'bk-4','bk-4',
+  'bk-y','bk-y',
+  'bk-c',
+];
+const VO_POOL=['va','va','va','vb','vb','vc','vc','vd','vd','ve','ve','vf','vg','vg','vh','vi','vi','vj','vk','vk','vl'];
+
+// Character width factors per voice (for font-size selection)
+const CWF={va:.53,vb:.46,vc:.50,vd:.54,ve:.44,vf:.53,vg:.54,vh:.56,vi:.46,vj:.52,vk:.52,vl:.48};
+
+let bgArr=[],voArr=[],bgI=0,voI=0;
+function initPools(){
+  bgArr=shuffle([...BG_POOL]); voArr=shuffle([...VO_POOL]);
+  bgI=0; voI=0;
+}
+function nextBg(){ return bgArr[(bgI++)%bgArr.length]; }
+function nextVo(){ return voArr[(voI++)%voArr.length]; }
+
+function pickFS(text, vo, colW) {
+  const n=text.length, avail=colW-40;
+  const cw=CWF[vo]||.52;
+  const isCondensed=(vo==='vb'||vo==='ve'||vo==='vi'||vo==='vl');
+  const isTall=(vo==='ve');
+  const cands=isTall?[60,48,38,30,24,20,16]:isCondensed?[44,36,28,22,18,16,15]:[40,32,26,21,17,15];
+  for(const fs of cands){
+    const cpl=Math.max(1,Math.floor(avail/(fs*cw)));
+    const lines=Math.ceil(n/cpl);
+    if(lines>=2&&lines<=8) return fs;
+  }
+  return 15;
+}
+
+const LB_CLS={va:'',vb:'caps',vc:'ital',vd:'',ve:'bebas',vf:'',vg:'abril',vh:'alfa',vi:'fjalla',vj:'right',vk:'yeseva',vl:'josefin'};
+
+// ═══════════════════════════════════════════════════
+//  TRUE MASONRY — JS absolute positioning
+// ═══════════════════════════════════════════════════
+const COL_W  = 360;
+const SEAM   = 2;
+const N_COLS = 12;
+const TOTAL_W = N_COLS*COL_W + (N_COLS-1)*SEAM;
+
+function buildMasonry(quotes) {
+  initPools();
+  const canvas=document.getElementById('canvas');
+  const measure=document.getElementById('measure');
+  canvas.innerHTML=''; measure.innerHTML='';
+  canvas.style.width=TOTAL_W+'px';
+  measure.style.width=COL_W+'px';
+  measure.style.padding='0';
+
+  const colH=new Array(N_COLS).fill(0);
+
+  quotes.forEach((q, idx)=>{
+    const bg=nextBg(), vo=nextVo();
+
+    // ── MEASURE: probe div gets the natural height ──
+    // Uses position:relative so content flows and offsetHeight is real.
+    // We start from pickFS and shrink 1px at a time until no overflow.
+    const MIN_FS = 13;
+    const MAX_H  = 500;
+
+    const probe = document.createElement('div');
+    probe.style.cssText =
+      `width:${COL_W}px;padding:18px 20px 16px;box-sizing:border-box;` +
+      `position:relative;overflow:hidden;`;
+    measure.appendChild(probe);
+
+    let fontSize = pickFS(q.t, vo, COL_W);
+    let finalH;
+
+    for (let attempt = 0; attempt < 20; attempt++) {
+      probe.innerHTML =
+        `<div class="${vo}">` +
+          `<div class="q-text" style="font-size:${fontSize}px;display:block;` +
+          `white-space:normal;word-wrap:break-word;overflow-wrap:break-word;">${esc(q.t)}</div>` +
+        `</div>` +
+        `<div class="q-meta">` +
+          `<div class="q-rule"></div>` +
+          `<div class="q-author">${esc(q.a)}</div>` +
+          (q.s ? `<div class="q-source">${esc(q.s)}</div>` : '') +
+        `</div>`;
+
+      const textEl  = probe.querySelector('.q-text');
+      const natural = probe.offsetHeight;
+      // Text overflows if its scroll height exceeds its rendered height
+      const overflows = textEl && (textEl.scrollHeight > textEl.offsetHeight + 1);
+
+      if (!overflows && natural <= MAX_H) {
+        finalH = Math.max(110, natural + 8); // +8px safety buffer
+        break;
+      }
+      if (fontSize <= MIN_FS) {
+        finalH = Math.max(110, Math.min(MAX_H, natural + 8));
+        break;
+      }
+      fontSize--;
+    }
+
+    if (!finalH) finalH = 160; // absolute fallback
+    measure.removeChild(probe);
+
+    // ── BUILD: flip-card tile with explicit height from measure ──
+    const tile = document.createElement('div');
+    tile.className = `tile ${bg} ${vo}`;
+    tile.style.width  = COL_W + 'px';
+    tile.style.height = finalH + 'px';
+    tile.dataset.cat  = q.s || 'Life';
+    tile.dataset.qi   = String(idx);
+
+    const faceContent = (qq, fsz) =>
+      `<div class="q-text" style="font-size:${fsz}px;word-wrap:break-word;overflow-wrap:break-word;">${esc(qq.t)}</div>` +
+      `<div class="q-meta"><div class="q-rule"></div>` +
+      `<div class="q-author">${esc(qq.a)}</div>` +
+      (qq.s ? `<div class="q-source">${esc(qq.s)}</div>` : '') +
+      `</div>`;
+
+    tile.innerHTML =
+      `<div class="tile-inner" style="height:${finalH}px">` +
+        `<div class="face front">${faceContent(q, fontSize)}</div>` +
+        `<div class="face back"></div>` +
+      `</div>`;
+
+    // Shortest column
+    let col = 0;
+    for (let c = 1; c < N_COLS; c++) if (colH[c] < colH[col]) col = c;
+
+    tile.style.left  = (col * (COL_W + SEAM)) + 'px';
+    tile.style.top   = colH[col] + 'px';
+    tile.style.transitionDelay = Math.min(idx * .015, 0.8).toFixed(2) + 's';
+
+    tile.addEventListener('click', ()=>{
+      if (!didDrag) {
+        const isFlipped = tile.classList.contains('flipped');
+        const shownQ = tile.dataset.flipQuote && tile.dataset.flipFace === (isFlipped ? 'back' : 'front')
+          ? JSON.parse(tile.dataset.flipQuote) : q;
+        openLB(shownQ, vo, tile);
+      }
+    });
+    tile.addEventListener('mouseenter', ()=>document.body.classList.add('hovering'));
+    tile.addEventListener('mouseleave',  ()=>document.body.classList.remove('hovering'));
+
+    canvas.appendChild(tile);
+    io.observe(tile);
+    colH[col] += finalH + SEAM;
+  });
+
+  canvas.style.height=Math.max(...colH)+'px';
+  zoom=1.0; updateZoomUI();
+  setTimeout(()=>{tx=cx=Math.max(0,(effectiveW()-vp.clientWidth)/2);ty=cy=0;},50);
+}
+
+function filterAndBuild(){
+  stopFlipScheduler();
+  buildMasonry(ALL_QUOTES);
+  startFlipScheduler();
+}
+
+function esc(s=''){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ═══════════════════════════════════════════════════
+//  FLIP SCHEDULER
+//
+//  Rules:
+//  1. Only flip tiles currently IN the viewport
+//  2. Never flip a tile that is hovered
+//  3. Never flip within 8s of a tile being opened in lightbox
+//  4. Stagger: each tile gets a random 15–40s personal timer
+//  5. Pause entirely when tab is hidden
+//  6. After a flip completes, the back becomes the new front
+//     and a new back is silently pre-loaded for next flip
+// ═══════════════════════════════════════════════════
+const visibleTiles  = new Set();   // tiles currently in viewport
+const recentlyViewed= new Map();   // tile → timestamp of last LB open
+let   flipTimers    = [];          // setTimeout handles
+let   flipPaused    = false;
+let   flipPool      = [];          // quotes available for flip content
+
+// Second IntersectionObserver just for flip eligibility tracking
+let flipIO = null;
+
+function startFlipScheduler() {
+  if (!flipPool.length) flipPool = [...ALL_QUOTES];
+
+  flipIO = new IntersectionObserver(entries=>{
+    entries.forEach(e=>{
+      if (e.isIntersecting) visibleTiles.add(e.target);
+      else                  visibleTiles.delete(e.target);
+    });
+  }, { root: vp, threshold: 0.3 }); // 30% visible = eligible
+
+  document.querySelectorAll('.tile').forEach(t=>flipIO.observe(t));
+  scheduleAllTiles();
+}
+
+function stopFlipScheduler() {
+  flipTimers.forEach(id=>clearTimeout(id));
+  flipTimers = [];
+  visibleTiles.clear();
+  recentlyViewed.clear();
+  if (flipIO) { flipIO.disconnect(); flipIO = null; }
+}
+
+function scheduleAllTiles() {
+  document.querySelectorAll('.tile').forEach(tile=>{
+    scheduleTile(tile);
+  });
+}
+
+function scheduleTile(tile) {
+  // Random delay 15–40 seconds, unique per tile
+  const delay = (15 + Math.random() * 25) * 1000;
+  const id = setTimeout(()=>{ attemptFlip(tile); }, delay);
+  flipTimers.push(id);
+}
+
+function attemptFlip(tile) {
+  // Guard: paused, not in DOM, not yet visible
+  if (flipPaused) { scheduleTile(tile); return; }
+  if (!document.contains(tile)) return;
+  if (!tile.classList.contains('in')) { scheduleTile(tile); return; }
+
+  // Guard: not in viewport
+  if (!visibleTiles.has(tile)) { scheduleTile(tile); return; }
+
+  // Guard: hovered
+  if (tile.matches(':hover')) { scheduleTile(tile); return; }
+
+  // Guard: recently opened in lightbox (within 8s)
+  const lastViewed = recentlyViewed.get(tile) || 0;
+  if (Date.now() - lastViewed < 8000) { scheduleTile(tile); return; }
+
+  // Guard: already mid-flip
+  if (tile.classList.contains('flipping')) { scheduleTile(tile); return; }
+
+  // ── Execute the flip ──
+  const isFlipped = tile.classList.contains('flipped');
+  const inner     = tile.querySelector('.tile-inner');
+  const front     = tile.querySelector('.face.front');
+  const back      = tile.querySelector('.face.back');
+  const vo        = [...tile.classList].find(c=>c.startsWith('v')&&c.length===2) || 'va';
+
+  // Pick a new quote for the hidden face
+  const nextQ = pickNextQuote(tile);
+  if (!nextQ) { scheduleTile(tile); return; }
+
+  // Pre-load the hidden face with the new content
+  const hiddenFace = isFlipped ? front : back;
+  const fs = pickFS(nextQ.t, vo, COL_W);
+  hiddenFace.innerHTML =
+    `<div class="q-text" style="font-size:${fs}px">${esc(nextQ.t)}</div>`+
+    `<div class="q-meta"><div class="q-rule"></div>`+
+    `<div class="q-author">${esc(nextQ.a)}</div>`+
+    (nextQ.s?`<div class="q-source">${esc(nextQ.s)}</div>`:'')+
+    `</div>`;
+
+  // Store new quote on tile for lightbox access after flip
+  tile.dataset.flipQuote = JSON.stringify(nextQ);
+  tile.dataset.flipFace  = isFlipped ? 'front' : 'back';
+
+  // Update tile click handler to use whichever face is showing
+  // (handled in openLB by reading the current face)
+
+  // Animate
+  tile.classList.add('flipping');
+  tile.classList.toggle('flipped');
+
+  inner.addEventListener('transitionend', ()=>{
+    tile.classList.remove('flipping');
+    // Re-schedule this tile for another flip later
+    scheduleTile(tile);
+  }, { once: true });
+}
+
+// Pick a quote not currently showing on any visible tile
+function pickNextQuote(tile) {
+  if (!flipPool.length) return null;
+  // Collect texts currently visible on screen
+  const showing = new Set(
+    [...document.querySelectorAll('.tile.in')].map(t=>{
+      const txt = t.querySelector('.face.front .q-text') ||
+                  t.querySelector('.face.back .q-text');
+      return txt ? txt.textContent : '';
+    })
+  );
+  // Pick a random quote not in showing set
+  const candidates = flipPool.filter(q=>!showing.has(q.t));
+  if (!candidates.length) return flipPool[Math.floor(Math.random()*flipPool.length)];
+  return candidates[Math.floor(Math.random()*candidates.length)];
+}
+
+// Pause/resume on tab visibility
+document.addEventListener('visibilitychange', ()=>{
+  flipPaused = document.hidden;
+});
+
+// ═══════════════════════════════════════════════════
+//  INTERSECTION OBSERVER
+// ═══════════════════════════════════════════════════
+const vp=document.getElementById('vp');
+const io=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('in');});
+},{root:vp,threshold:.02,rootMargin:'120px 300px 120px 300px'});
+
+// ═══════════════════════════════════════════════════
+//  ZOOM + PHYSICS SCROLL ENGINE
+//
+//  zoom=1.0  → 12 columns (full overview, zoomed out)
+//  zoom=1.5  → effectively 8 columns (zoomed in)
+//  Range: 1.0 – 1.5  (5 steps of 0.1)
+//
+//  How it works:
+//  The canvas is built at NATURAL_COLS=12 columns.
+//  We apply CSS transform: translate3d(-px,-py,0) scale(z)
+//  with transform-origin:0 0.
+//
+//  Effective canvas size = NATURAL_W * z  × NATURAL_H * z
+//  Max scroll = effective size - viewport size
+//
+//  On zoom change we keep the VIEWPORT CENTER fixed:
+//    newPan = (oldPan + vpCenter) * (newZ/oldZ) - vpCenter
+// ═══════════════════════════════════════════════════
+const ZOOM_MIN  = 1.0;
+const ZOOM_MAX  = 1.5;
+const ZOOM_STEP = 0.1;
+
+let zoom = 1.0;   // current zoom level
+let cx=0,cy=0,tx=0,ty=0,vvx=0,vvy=0;
+let dragging=false,didDrag=false;
+let dsx=0,dsy=0,dtx=0,dty=0,lx=0,ly=0;
+
+const clamp=(v,lo,hi)=>v<lo?lo:v>hi?hi:v;
+
+function naturalW() { return parseInt(document.getElementById('canvas').style.width)||4320; }
+function naturalH() { return parseInt(document.getElementById('canvas').style.height)||9000; }
+function effectiveW() { return naturalW() * zoom; }
+function effectiveH() { return naturalH() * zoom; }
+function maxX() { return Math.max(0, effectiveW() - vp.clientWidth); }
+function maxY() { return Math.max(0, effectiveH() - vp.clientHeight); }
+
+function applyTransform() {
+  document.getElementById('canvas').style.transform =
+    `translate3d(${-(cx|0)}px,${-(cy|0)}px,0) scale(${zoom})`;
+}
+
+// Zoom step, keeping viewport center fixed
+function applyZoom(newZ) {
+  const vpCX = vp.clientWidth  / 2;
+  const vpCY = vp.clientHeight / 2;
+  const ratio = newZ / zoom;
+  // Adjust pan so the center of viewport stays on the same canvas point
+  tx = clamp((tx + vpCX) * ratio - vpCX, 0, Math.max(0, effectiveW() * ratio / newZ * newZ - vp.clientWidth));
+  ty = clamp((ty + vpCY) * ratio - vpCY, 0, Math.max(0, effectiveH() * ratio / newZ * newZ - vp.clientHeight));
+  cx = tx; cy = ty;
+  zoom = newZ;
+  // Clamp again with correct effective size
+  tx = clamp(tx, 0, maxX());
+  ty = clamp(ty, 0, maxY());
+  cx = tx; cy = ty;
+  updateZoomUI();
+  applyTransform();
+}
+
+function updateZoomUI() {
+  document.getElementById('zoom-label').textContent = Math.round(zoom * 100) + '%';
+  document.getElementById('btn-zoom-out').disabled = zoom <= ZOOM_MIN;
+  document.getElementById('btn-zoom-in').disabled  = zoom >= ZOOM_MAX;
+}
+
+;(function tick(){
+  if(!dragging){
+    vvx*=.875; vvy*=.875;
+    tx=clamp(tx+vvx, 0, maxX());
+    ty=clamp(ty+vvy, 0, maxY());
+  }
+  cx+=(tx-cx)*.13; cy+=(ty-cy)*.13;
+  applyTransform();
+  requestAnimationFrame(tick);
+})();
+
+vp.addEventListener('mousedown',e=>{
+  dragging=true; didDrag=false; document.body.classList.add('dragging');
+  dsx=e.clientX; dsy=e.clientY; dtx=tx; dty=ty; lx=e.clientX; ly=e.clientY; vvx=0; vvy=0;
+});
+window.addEventListener('mouseup',()=>{ dragging=false; document.body.classList.remove('dragging'); });
+window.addEventListener('mousemove',e=>{
+  if(!dragging) return;
+  const dx=e.clientX-dsx, dy=e.clientY-dsy;
+  if(Math.abs(dx)>4||Math.abs(dy)>4) didDrag=true;
+  vvx=(lx-e.clientX)*1.3; vvy=(ly-e.clientY)*1.3;
+  lx=e.clientX; ly=e.clientY;
+  tx=clamp(dtx-dx, 0, maxX()); ty=clamp(dty-dy, 0, maxY());
+});
+
+vp.addEventListener('wheel', e=>{
+  e.preventDefault();
+  // Ctrl+wheel or pinch-zoom gesture → zoom
+  if(e.ctrlKey || e.metaKey) {
+    const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
+    const newZ  = clamp(Math.round((zoom + delta) * 10) / 10, ZOOM_MIN, ZOOM_MAX);
+    if(newZ !== zoom) applyZoom(newZ);
+  } else {
+    // Normal scroll → pan
+    tx=clamp(tx+e.deltaX*1.1, 0, maxX());
+    ty=clamp(ty+e.deltaY*1.1, 0, maxY());
+    vvx=0; vvy=0;
+  }
+}, {passive:false});
+
+// Touch pan
+let tsx=0,tsy=0,ttx=0,tty=0,tlx=0,tly=0;
+// Touch pinch zoom
+let pinching=false, initPinchDist=0, initZoom=1;
+function pinchDist(t){ return Math.hypot(t[0].clientX-t[1].clientX, t[0].clientY-t[1].clientY); }
+
+vp.addEventListener('touchstart',e=>{
+  if(e.touches.length===2){
+    pinching=true; initPinchDist=pinchDist(e.touches); initZoom=zoom;
+  } else {
+    tsx=e.touches[0].clientX; tsy=e.touches[0].clientY;
+    ttx=tx; tty=ty; tlx=tsx; tly=tsy; vvx=0; vvy=0; didDrag=false;
+  }
+},{passive:true});
+
+vp.addEventListener('touchmove',e=>{
+  if(pinching && e.touches.length===2){
+    const d=pinchDist(e.touches);
+    const ratio=d/initPinchDist;
+    const newZ=clamp(Math.round(initZoom*ratio*10)/10, ZOOM_MIN, ZOOM_MAX);
+    if(newZ!==zoom) applyZoom(newZ);
+  } else if(!pinching && e.touches.length===1){
+    const dx=e.touches[0].clientX-tsx, dy=e.touches[0].clientY-tsy;
+    if(Math.abs(dx)>4||Math.abs(dy)>4) didDrag=true;
+    vvx=(tlx-e.touches[0].clientX)*1.6; vvy=(tly-e.touches[0].clientY)*1.6;
+    tlx=e.touches[0].clientX; tly=e.touches[0].clientY;
+    tx=clamp(ttx-dx, 0, maxX()); ty=clamp(tty-dy, 0, maxY());
+  }
+},{passive:true});
+
+vp.addEventListener('touchend',e=>{ if(e.touches.length<2) pinching=false; },{passive:true});
+
+document.addEventListener('keydown',e=>{
+  const d=180;
+  if(e.key==='ArrowRight') tx=clamp(tx+d, 0, maxX());
+  if(e.key==='ArrowLeft')  tx=clamp(tx-d, 0, maxX());
+  if(e.key==='ArrowDown')  ty=clamp(ty+d, 0, maxY());
+  if(e.key==='ArrowUp')    ty=clamp(ty-d, 0, maxY());
+  if(e.key==='+' || e.key==='=') {
+    const nz=clamp(Math.round((zoom+ZOOM_STEP)*10)/10, ZOOM_MIN, ZOOM_MAX);
+    if(nz!==zoom) applyZoom(nz);
+  }
+  if(e.key==='-') {
+    const nz=clamp(Math.round((zoom-ZOOM_STEP)*10)/10, ZOOM_MIN, ZOOM_MAX);
+    if(nz!==zoom) applyZoom(nz);
+  }
+  if(e.key==='Escape') closeLB();
+});
+
+// Zoom buttons
+document.getElementById('btn-zoom-in').addEventListener('click',()=>{
+  const nz=clamp(Math.round((zoom+ZOOM_STEP)*10)/10, ZOOM_MIN, ZOOM_MAX);
+  if(nz!==zoom) applyZoom(nz);
+});
+document.getElementById('btn-zoom-out').addEventListener('click',()=>{
+  const nz=clamp(Math.round((zoom-ZOOM_STEP)*10)/10, ZOOM_MIN, ZOOM_MAX);
+  if(nz!==zoom) applyZoom(nz);
+});
+
+// ═══════════════════════════════════════════════════
+//  RING CURSOR
+// ═══════════════════════════════════════════════════
+const dot=document.getElementById('cur-dot');
+const ring=document.getElementById('cur-ring');
+let mx=0,my=0,rx=0,ry=0;
+window.addEventListener('mousemove',e=>{
+  mx=e.clientX;my=e.clientY;
+  dot.style.left=mx+'px';dot.style.top=my+'px';
+});
+;(function lr(){
+  rx+=(mx-rx)*.16;ry+=(my-ry)*.16;
+  ring.style.left=(rx|0)+'px';ring.style.top=(ry|0)+'px';
+  requestAnimationFrame(lr);
+})();
+
+// ═══════════════════════════════════════════════════
+//  FILTER CHIPS
+// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
+//  SHUFFLE BUTTON
+// ═══════════════════════════════════════════════════
+document.getElementById('btn-shuffle').addEventListener('click',()=>{
+  ALL_QUOTES=shuffle([...ALL_QUOTES]);
+  filterAndBuild();
+  showToast('Wall reshuffled');
+});
+
+// ═══════════════════════════════════════════════════
+//  LIGHTBOX
+// ═══════════════════════════════════════════════════
+function openLB(q, vo, tile){
+  // Mark this tile so flip scheduler avoids it for 8s
+  if (tile) recentlyViewed.set(tile, Date.now());
+
+  currentLBQuote = q;
+  const el=document.getElementById('lb-qt');
+  el.textContent=q.t; el.className=LB_CLS[vo]||'';
+  document.getElementById('lb-au').textContent=q.a;
+  document.getElementById('lb-src').textContent=q.s||'';
+  document.getElementById('lb').classList.add('open');
+}
+function closeLB(){document.getElementById('lb').classList.remove('open');}
+document.getElementById('lb-bg').addEventListener('click',closeLB);
+document.getElementById('lb-x').addEventListener('click',closeLB);
+
+// Share
+document.getElementById('lb-share').addEventListener('click',async()=>{
+  if(!currentLBQuote)return;
+  const text=`"${currentLBQuote.t}" — ${currentLBQuote.a}`;
+  if(navigator.share){
+    try { await navigator.share({title:'Verbatim',text}); }
+    catch{}
+  } else {
+    await navigator.clipboard.writeText(text).catch(()=>{});
+    showToast('Copied to clipboard');
+  }
+});
+
+// Copy
+document.getElementById('lb-copy').addEventListener('click',async()=>{
+  if(!currentLBQuote)return;
+  const text=`"${currentLBQuote.t}" — ${currentLBQuote.a}`;
+  try { await navigator.clipboard.writeText(text); showToast('Copied!'); }
+  catch{ showToast('Copy failed'); }
+});
+
+// ═══════════════════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════════════════
+let toastTimer=null;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+// ═══════════════════════════════════════════════════
+//  PWA
+// ═══════════════════════════════════════════════════
+if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+let dp=null;
+const ib=document.getElementById('ib');
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();dp=e;setTimeout(()=>ib.classList.add('show'),6000);});
+document.getElementById('ib-btn').addEventListener('click',async()=>{if(!dp)return;ib.classList.remove('show');dp.prompt();await dp.userChoice;dp=null;});
+document.getElementById('ib-x').addEventListener('click',()=>ib.classList.remove('show'));
+window.addEventListener('appinstalled',()=>{ib.classList.remove('show');dp=null;});
+const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent)&&!window.MSStream;
+if(isIOS&&!navigator.standalone&&!localStorage.getItem('iosd')){
+  setTimeout(()=>{ib.querySelector('p').textContent='Tap Share → Add to Home Screen';document.getElementById('ib-btn').style.display='none';ib.classList.add('show');},6000);
+  document.getElementById('ib-x').addEventListener('click',()=>localStorage.setItem('iosd','1'),{once:true});
+}
+
+// ═══════════════════════════════════════════════════
+//  BOOT
+// ═══════════════════════════════════════════════════
+async function boot() {
+  const [quotes] = await Promise.all([loadAll(), document.fonts.ready]);
+  ALL_QUOTES = quotes;
+  flipPool   = shuffle([...ALL_QUOTES]);
+  filterAndBuild();
+}
+boot();
+</script>
+</body>
+</html>

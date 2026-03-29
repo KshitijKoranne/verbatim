@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Verbatim — An infinite, scrollable mosaic of the world's most powerful quotes. Install free on Android and iOS.">
+<title>Verbatim — A Wall of Words</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,400&family=Bebas+Neue&family=DM+Mono:wght@400;500&family=Cormorant+Garamond:ital,wght@0,400;1,300;1,600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:    #17181a;
+  --bg2:   #1d1e20;
+  --gold:  #c9b84c;
+  --cream: #e8e3d0;
+  --muted: #6a6860;
+  --bord:  #272820;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--cream);
+  font-family: 'DM Mono', monospace;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* ── NAV ── */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 56px;
+  background: rgba(23,24,26,0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--bord);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 40px;
+  z-index: 100;
+}
+.nav-logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 0.22em;
+  color: var(--gold);
+  text-decoration: none;
+}
+.nav-links {
+  display: flex;
+  gap: 32px;
+  list-style: none;
+}
+.nav-links a {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--cream); }
+.nav-cta {
+  background: var(--gold);
+  color: #111 !important;
+  padding: 8px 18px;
+  font-weight: 500;
+  transition: background 0.2s !important;
+}
+.nav-cta:hover { background: #d4c55a !important; color: #111 !important; }
+
+/* ── HERO ── */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 100px 40px 80px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 40% at 50% 60%, rgba(201,184,76,0.06) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 60% at 20% 30%, rgba(138,160,200,0.04) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+/* Floating quote tiles in hero */
+.hero-tiles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.hero-tile {
+  position: absolute;
+  background: var(--bg2);
+  border: 1px solid var(--bord);
+  padding: 16px 18px;
+  opacity: 0;
+  animation: floatIn 0.8s forwards;
+}
+.hero-tile .ht-text {
+  font-family: 'Playfair Display', serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--cream);
+  line-height: 1.3;
+  margin-bottom: 8px;
+}
+.hero-tile .ht-auth {
+  font-size: 8px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold);
+  opacity: 0.6;
+}
+.hero-tile.t1 { left:3%;  top:14%; width:170px; animation-delay:0.3s; transform:rotate(-1.5deg); }
+.hero-tile.t2 { right:4%; top:18%; width:190px; animation-delay:0.5s; transform:rotate(1deg); }
+.hero-tile.t3 { left:6%;  bottom:18%; width:150px; animation-delay:0.7s; transform:rotate(1.2deg); }
+.hero-tile.t4 { right:5%; bottom:20%; width:175px; animation-delay:0.9s; transform:rotate(-0.8deg); }
+.hero-tile.t5 { left:30%; top:8%;  width:140px; animation-delay:0.4s; transform:rotate(0.5deg); }
+.hero-tile.gold { background: var(--gold); }
+.hero-tile.gold .ht-text { color: #111; font-size:12px; }
+.hero-tile.gold .ht-auth { color: #111; }
+
+@keyframes floatIn {
+  from { opacity:0; transform:translateY(20px) rotate(var(--r, 0deg)); }
+  to   { opacity:1; transform:translateY(0)    rotate(var(--r, 0deg)); }
+}
+
+.hero-eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 24px;
+  position: relative;
+  z-index: 1;
+}
+.hero-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(44px, 7vw, 96px);
+  font-weight: 900;
+  line-height: 0.92;
+  color: var(--cream);
+  letter-spacing: -0.02em;
+  position: relative;
+  z-index: 1;
+  margin-bottom: 12px;
+}
+.hero-title span { color: var(--gold); font-style: italic; }
+.hero-sub {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: clamp(18px, 2.5vw, 26px);
+  color: var(--muted);
+  line-height: 1.4;
+  max-width: 480px;
+  margin: 0 auto 48px;
+  position: relative;
+  z-index: 1;
+}
+.hero-actions {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+}
+.btn-primary {
+  background: var(--gold);
+  color: #111;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 16px 36px;
+  border: none;
+  text-decoration: none;
+  display: inline-block;
+  transition: background 0.2s, transform 0.1s;
+  font-weight: 500;
+}
+.btn-primary:hover { background: #d4c55a; transform: translateY(-1px); }
+.btn-secondary {
+  background: transparent;
+  color: var(--cream);
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 16px 36px;
+  border: 1px solid var(--bord);
+  text-decoration: none;
+  display: inline-block;
+  transition: border-color 0.2s, color 0.2s;
+}
+.btn-secondary:hover { border-color: #5a5a4a; color: var(--cream); }
+
+.hero-scroll-hint {
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+  opacity: 0.4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.scroll-line {
+  width: 1px;
+  height: 32px;
+  background: var(--muted);
+  opacity: 0.3;
+  animation: scrollDown 2s ease-in-out infinite;
+}
+@keyframes scrollDown {
+  0%,100% { transform: scaleY(1); opacity: 0.3; }
+  50%      { transform: scaleY(0.5); opacity: 0.1; }
+}
+
+/* ── SECTION SHARED ── */
+section {
+  padding: 100px 40px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.section-label {
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 20px;
+}
+.section-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(28px, 4vw, 52px);
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--cream);
+  margin-bottom: 16px;
+}
+.section-body {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--muted);
+  max-width: 560px;
+}
+
+/* ── FEATURES ── */
+#features { border-top: 1px solid var(--bord); }
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1px;
+  background: var(--bord);
+  margin-top: 64px;
+}
+.feature {
+  background: var(--bg);
+  padding: 40px 36px;
+  transition: background 0.3s;
+}
+.feature:hover { background: var(--bg2); }
+.feat-num {
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: var(--gold);
+  opacity: 0.5;
+  margin-bottom: 20px;
+}
+.feat-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--cream);
+  margin-bottom: 12px;
+  line-height: 1.2;
+}
+.feat-desc {
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--muted);
+}
+
+/* ── QUOTE SHOWCASE ── */
+#showcase { border-top: 1px solid var(--bord); }
+.showcase-strip {
+  display: flex;
+  gap: 0;
+  margin-top: 56px;
+  overflow: hidden;
+  border: 1px solid var(--bord);
+}
+.sc-tile {
+  flex: 1;
+  padding: 32px 28px;
+  border-right: 1px solid var(--bord);
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.sc-tile:last-child { border-right: none; }
+.sc-tile.sc-gold { background: var(--gold); }
+.sc-tile.sc-cream { background: #e8e3d0; }
+.sc-text {
+  font-family: 'Playfair Display', serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--cream);
+  line-height: 1.3;
+  margin-bottom: 16px;
+}
+.sc-tile.sc-gold .sc-text,
+.sc-tile.sc-cream .sc-text { color: #111; }
+.sc-auth {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.sc-tile.sc-gold .sc-auth,
+.sc-tile.sc-cream .sc-auth { color: #111; opacity: 0.5; }
+
+/* ── INSTALL GUIDE ── */
+#install { border-top: 1px solid var(--bord); }
+.install-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  margin-top: 64px;
+}
+.install-col h3 {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--cream);
+  margin-bottom: 24px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--bord);
+}
+.install-steps {
+  list-style: none;
+  counter-reset: steps;
+}
+.install-steps li {
+  counter-increment: steps;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.install-steps li::before {
+  content: counter(steps, decimal-leading-zero);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--gold);
+  opacity: 0.6;
+  flex-shrink: 0;
+  margin-top: 2px;
+  min-width: 24px;
+}
+.install-steps li strong { color: var(--cream); }
+
+/* ── STATS ── */
+#stats {
+  border-top: 1px solid var(--bord);
+  border-bottom: 1px solid var(--bord);
+  padding: 80px 40px;
+}
+.stats-row {
+  max-width: 900px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--bord);
+}
+.stat {
+  background: var(--bg);
+  padding: 40px 32px;
+  text-align: center;
+}
+.stat-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 56px;
+  color: var(--gold);
+  line-height: 1;
+  letter-spacing: 0.04em;
+}
+.stat-label {
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: 8px;
+}
+
+/* ── CTA SECTION ── */
+#cta {
+  padding: 120px 40px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+#cta::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 50% 60% at 50% 50%, rgba(201,184,76,0.07) 0%, transparent 70%);
+  pointer-events: none;
+}
+.cta-quote {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: clamp(22px, 3.5vw, 44px);
+  color: var(--cream);
+  line-height: 1.25;
+  max-width: 700px;
+  margin: 0 auto 12px;
+  position: relative;
+}
+.cta-attr {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+  opacity: 0.6;
+  margin-bottom: 52px;
+}
+.cta-line {
+  width: 40px; height: 1px;
+  background: var(--gold);
+  opacity: 0.3;
+  margin: 16px auto 24px;
+}
+
+/* ── FOOTER ── */
+footer {
+  border-top: 1px solid var(--bord);
+  padding: 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.foot-logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  letter-spacing: 0.22em;
+  color: var(--gold);
+  opacity: 0.6;
+}
+.foot-copy {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  opacity: 0.4;
+}
+.foot-links {
+  display: flex;
+  gap: 24px;
+}
+.foot-links a {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  opacity: 0.4;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+.foot-links a:hover { opacity: 0.8; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  nav { padding: 0 20px; }
+  .nav-links { display: none; }
+  .hero { padding: 90px 24px 70px; }
+  .hero-tile { display: none; }
+  section { padding: 70px 24px; }
+  .install-grid { grid-template-columns: 1fr; }
+  .stats-row { grid-template-columns: repeat(2, 1fr); }
+  .showcase-strip { flex-direction: column; }
+  .sc-tile { border-right: none; border-bottom: 1px solid var(--bord); }
+  footer { padding: 28px 24px; flex-direction: column; align-items: flex-start; }
+}
+@media (max-width: 480px) {
+  .hero-title { letter-spacing: -0.01em; }
+  .stats-row { grid-template-columns: 1fr 1fr; }
+}
+
+/* Entrance animations */
+.fade-up {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.fade-up.visible { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="index.html" class="nav-logo">VERBATIM</a>
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#showcase">Quotes</a></li>
+    <li><a href="#install">Install</a></li>
+    <li><a href="index.html" class="nav-cta">Open App →</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-tiles">
+    <div class="hero-tile t1">
+      <div class="ht-text">Less is more.</div>
+      <div class="ht-auth">Mies van der Rohe</div>
+    </div>
+    <div class="hero-tile t2 gold">
+      <div class="ht-text">Done is better than perfect.</div>
+      <div class="ht-auth">Sheryl Sandberg</div>
+    </div>
+    <div class="hero-tile t3">
+      <div class="ht-text">To see takes time.</div>
+      <div class="ht-auth">Georgia O'Keeffe</div>
+    </div>
+    <div class="hero-tile t4">
+      <div class="ht-text">Never delegate understanding.</div>
+      <div class="ht-auth">Charles Eames</div>
+    </div>
+    <div class="hero-tile t5">
+      <div class="ht-text">The first draft of anything is garbage.</div>
+      <div class="ht-auth">Hemingway</div>
+    </div>
+  </div>
+
+  <div class="hero-eyebrow">A new kind of reading experience</div>
+  <h1 class="hero-title">A <span>Wall</span><br>of Words</h1>
+  <p class="hero-sub">120+ hand-curated quotes from the world's greatest minds — arranged in an infinite, explorable mosaic.</p>
+  <div class="hero-actions">
+    <a href="index.html" class="btn-primary">Open Verbatim →</a>
+    <a href="#install" class="btn-secondary">Install on Phone</a>
+  </div>
+
+  <div class="hero-scroll-hint">
+    <div class="scroll-line"></div>
+    <span>scroll</span>
+  </div>
+</div>
+
+<!-- STATS -->
+<div id="stats">
+  <div class="stats-row">
+    <div class="stat fade-up">
+      <div class="stat-num">120+</div>
+      <div class="stat-label">Curated Quotes</div>
+    </div>
+    <div class="stat fade-up" style="transition-delay:0.1s">
+      <div class="stat-num">10</div>
+      <div class="stat-label">Categories</div>
+    </div>
+    <div class="stat fade-up" style="transition-delay:0.2s">
+      <div class="stat-num">∞</div>
+      <div class="stat-label">Canvas to Explore</div>
+    </div>
+    <div class="stat fade-up" style="transition-delay:0.3s">
+      <div class="stat-num">0</div>
+      <div class="stat-label">Ads, Ever</div>
+    </div>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="section-label fade-up">What makes it different</div>
+  <h2 class="section-title fade-up">Designed for<br>discovery, not lists.</h2>
+  <p class="section-body fade-up">Most quote apps give you one quote at a time. Verbatim gives you a living wall — every visit is different, every scroll reveals something unexpected.</p>
+  <div class="features-grid">
+    <div class="feature fade-up">
+      <div class="feat-num">01</div>
+      <div class="feat-title">Infinite Mosaic</div>
+      <div class="feat-desc">Quotes are arranged in a typographic grid that stretches in every direction. Drag, scroll, and pan like a map.</div>
+    </div>
+    <div class="feature fade-up" style="transition-delay:0.08s">
+      <div class="feat-num">02</div>
+      <div class="feat-title">Physics Scroll</div>
+      <div class="feat-desc">Drag and release — the canvas coasts with natural inertia. Works with mouse, trackpad, touch, and keyboard arrows.</div>
+    </div>
+    <div class="feature fade-up" style="transition-delay:0.16s">
+      <div class="feat-num">03</div>
+      <div class="feat-title">Fade-in Reveal</div>
+      <div class="feat-desc">Every quote fades in as it enters view. The wall comes alive as you explore it — no two sessions look the same.</div>
+    </div>
+    <div class="feature fade-up" style="transition-delay:0.24s">
+      <div class="feat-num">04</div>
+      <div class="feat-title">Works Offline</div>
+      <div class="feat-desc">Install once, access forever. A service worker caches everything so Verbatim works without a connection.</div>
+    </div>
+    <div class="feature fade-up" style="transition-delay:0.32s">
+      <div class="feat-num">05</div>
+      <div class="feat-title">Editorial Typography</div>
+      <div class="feat-desc">Three typefaces — Playfair Display, Cormorant Garamond, and Fragment Mono — matched to the character of each quote.</div>
+    </div>
+    <div class="feature fade-up" style="transition-delay:0.4s">
+      <div class="feat-num">06</div>
+      <div class="feat-title">Installs Like an App</div>
+      <div class="feat-desc">Progressive Web App. Add to your home screen on Android or iOS — no app store required. Fullscreen, no browser chrome.</div>
+    </div>
+  </div>
+</section>
+
+<!-- SHOWCASE -->
+<section id="showcase">
+  <div class="section-label fade-up">A taste of what's inside</div>
+  <h2 class="section-title fade-up">Quotes that<br>make you stop.</h2>
+  <div class="showcase-strip fade-up">
+    <div class="sc-tile">
+      <div class="sc-text">To see takes time.</div>
+      <div class="sc-auth">Georgia O'Keeffe</div>
+    </div>
+    <div class="sc-tile sc-gold">
+      <div class="sc-text">Never delegate understanding.</div>
+      <div class="sc-auth">Charles Eames</div>
+    </div>
+    <div class="sc-tile">
+      <div class="sc-text">The first draft of anything is garbage.</div>
+      <div class="sc-auth">Ernest Hemingway</div>
+    </div>
+    <div class="sc-tile sc-cream">
+      <div class="sc-text">Simplicity is the ultimate sophistication.</div>
+      <div class="sc-auth">Leonardo da Vinci</div>
+    </div>
+    <div class="sc-tile">
+      <div class="sc-text">The details are not the details. They make the design.</div>
+      <div class="sc-auth">Charles Eames</div>
+    </div>
+  </div>
+</section>
+
+<!-- INSTALL -->
+<section id="install">
+  <div class="section-label fade-up">Install guide</div>
+  <h2 class="section-title fade-up">On your phone<br>in 30 seconds.</h2>
+  <p class="section-body fade-up">No app store. No download. Just add to your home screen and it works like a native app — offline included.</p>
+  <div class="install-grid">
+    <div class="install-col fade-up">
+      <h3>Android · Chrome</h3>
+      <ol class="install-steps">
+        <li>Open <strong>verbatim.app</strong> in Chrome</li>
+        <li>Tap the <strong>three-dot menu</strong> (⋮) in the top right</li>
+        <li>Tap <strong>"Add to Home Screen"</strong></li>
+        <li>Tap <strong>Add</strong> on the confirmation dialog</li>
+        <li>Verbatim appears on your home screen — tap to launch fullscreen</li>
+      </ol>
+    </div>
+    <div class="install-col fade-up" style="transition-delay:0.15s">
+      <h3>iPhone / iPad · Safari</h3>
+      <ol class="install-steps">
+        <li>Open <strong>verbatim.app</strong> in Safari</li>
+        <li>Tap the <strong>Share button</strong> (the box with an arrow) at the bottom</li>
+        <li>Scroll down and tap <strong>"Add to Home Screen"</strong></li>
+        <li>Tap <strong>Add</strong> in the top right corner</li>
+        <li>Verbatim appears on your home screen — no browser chrome, full screen</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section id="cta">
+  <div class="cta-quote fade-up">"The details are not the details. They make the design."</div>
+  <div class="cta-line fade-up"></div>
+  <div class="cta-attr fade-up">Charles Eames</div>
+  <div class="fade-up" style="transition-delay:0.1s">
+    <a href="index.html" class="btn-primary">Explore the Wall →</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="foot-logo">VERBATIM</div>
+  <div class="foot-copy">© 2026 · A Wall of Words · Free Forever</div>
+  <div class="foot-links">
+    <a href="index.html">App</a>
+    <a href="#features">Features</a>
+    <a href="#install">Install</a>
+  </div>
+</footer>
+
+<script>
+// Scroll-triggered entrance animations
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('visible');
+      observer.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
