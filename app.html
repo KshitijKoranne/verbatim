@@ -699,6 +699,8 @@ async function loadAll() {
 // ═══════════════════════════════════════════════════
 let ALL_QUOTES = [];
 let currentLBQuote = null;
+let currentLBVo    = 'va';
+let currentLBBg    = 'bk-0';
 
 // ═══════════════════════════════════════════════════
 //  STYLE ASSIGNMENT — 12 font voices
@@ -1207,10 +1209,15 @@ document.getElementById('btn-shuffle').addEventListener('click',()=>{
 //  LIGHTBOX
 // ═══════════════════════════════════════════════════
 function openLB(q, vo, tile){
-  // Mark this tile so flip scheduler avoids it for 8s
   if (tile) recentlyViewed.set(tile, Date.now());
 
   currentLBQuote = q;
+  currentLBVo    = vo || 'va';
+  // Extract bg class from tile (bk-0 through bk-4, bk-y, bk-c)
+  currentLBBg = tile
+    ? ([...tile.classList].find(c=>c.startsWith('bk-')) || 'bk-0')
+    : 'bk-0';
+
   const el=document.getElementById('lb-qt');
   el.textContent=q.t; el.className=LB_CLS[vo]||'';
   document.getElementById('lb-au').textContent=q.a;
@@ -1221,20 +1228,204 @@ function closeLB(){document.getElementById('lb').classList.remove('open');}
 document.getElementById('lb-bg').addEventListener('click',closeLB);
 document.getElementById('lb-x').addEventListener('click',closeLB);
 
-// Share
-document.getElementById('lb-share').addEventListener('click',async()=>{
-  if(!currentLBQuote)return;
-  const siteUrl='https://verbatim-quote.vercel.app';
-  const quote=`"${currentLBQuote.t}" — ${currentLBQuote.a}`;
-  const text=`${quote}\n\nExplore the wall → ${siteUrl}`;
-  if(navigator.share){
-    try { await navigator.share({title:'Verbatim',text,url:siteUrl}); }
-    catch{}
-  } else {
-    await navigator.clipboard.writeText(text).catch(()=>{});
-    showToast('Copied to clipboard');
+// ═══════════════════════════════════════════════════
+//  QUOTE IMAGE GENERATOR
+//  Renders the quote as a 1080×1080 canvas image
+//  matching the tile's exact look — bg color, font,
+//  size, author line, gold rule, Verbatim watermark.
+// ═══════════════════════════════════════════════════
+
+// Background colors matching CSS classes
+const BG_COLORS = {
+  'bk-0': '#1e2010', 'bk-1': '#232514', 'bk-2': '#191b0c',
+  'bk-3': '#272918', 'bk-4': '#111208', 'bk-y': '#c8b82e',
+  'bk-c': '#eae6d0',
+};
+const TEXT_COLORS = { 'bk-y': '#131400', 'bk-c': '#181700' };
+const GOLD_COLORS = { 'bk-y': 'rgba(0,0,0,0.45)', 'bk-c': 'rgba(0,0,0,0.38)' };
+
+// Font stack per voice — canvas-safe with web font name first
+const FONT_FACES = {
+  va: { family: 'Playfair Display', weight: '900', style: 'normal',  lh: 1.17 },
+  vb: { family: 'Oswald',           weight: '700', style: 'normal',  lh: 1.06, upper: true },
+  vc: { family: 'Cormorant Garamond',weight: '700', style: 'italic', lh: 1.22 },
+  vd: { family: 'Libre Baskerville', weight: '700', style: 'normal',  lh: 1.20 },
+  ve: { family: 'Bebas Neue',        weight: '400', style: 'normal',  lh: 0.98, upper: true },
+  vf: { family: 'DM Serif Display',  weight: '400', style: 'italic',  lh: 1.18 },
+  vg: { family: 'Abril Fatface',     weight: '400', style: 'normal',  lh: 1.14 },
+  vh: { family: 'Alfa Slab One',     weight: '400', style: 'normal',  lh: 1.12 },
+  vi: { family: 'Fjalla One',        weight: '400', style: 'normal',  lh: 1.08, upper: true },
+  vj: { family: 'Righteous',         weight: '400', style: 'normal',  lh: 1.14 },
+  vk: { family: 'Yeseva One',        weight: '400', style: 'normal',  lh: 1.16 },
+  vl: { family: 'Josefin Sans',      weight: '700', style: 'normal',  lh: 1.12, upper: true },
+};
+
+// Pre-load all fonts into the document FontFaceSet so canvas can use them
+async function ensureFontsLoaded() {
+  await document.fonts.ready;
+  // Force load any that might be lazy
+  const toLoad = Object.values(FONT_FACES).map(f =>
+    document.fonts.load(`${f.style} ${f.weight} 40px "${f.family}"`)
+  );
+  await Promise.allSettled(toLoad);
+}
+
+// Wrap text onto canvas, return array of lines
+function wrapText(ctx, text, maxWidth) {
+  const words = text.split(' ');
+  const lines = [];
+  let line = '';
+  for (const word of words) {
+    const test = line ? line + ' ' + word : word;
+    if (ctx.measureText(test).width > maxWidth && line) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = test;
+    }
   }
-});
+  if (line) lines.push(line);
+  return lines;
+}
+
+async function renderQuoteImage(q, vo, bgClass) {
+  const SIZE    = 1080;
+  const PAD     = 88;
+  const INNER_W = SIZE - PAD * 2;
+
+  const bg   = BG_COLORS[bgClass]  || '#1e2010';
+  const textColor  = TEXT_COLORS[bgClass]  || '#e4dfc8';
+  const goldColor  = GOLD_COLORS[bgClass]  || '#c8b82e';
+  const ruleColor  = GOLD_COLORS[bgClass]  || 'rgba(200,184,46,0.4)';
+
+  const fnt  = FONT_FACES[vo] || FONT_FACES.va;
+  const text = fnt.upper ? q.t.toUpperCase() : q.t;
+
+  const canvas = document.createElement('canvas');
+  canvas.width  = SIZE;
+  canvas.height = SIZE;
+  const ctx = canvas.getContext('2d');
+
+  // ── Background ──
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, SIZE, SIZE);
+
+  // ── Subtle grain texture overlay (noise via random dots) ──
+  ctx.save();
+  ctx.globalAlpha = 0.03;
+  for (let i = 0; i < 18000; i++) {
+    const x = Math.random() * SIZE;
+    const y = Math.random() * SIZE;
+    ctx.fillStyle = bgClass === 'bk-y' || bgClass === 'bk-c' ? '#000' : '#fff';
+    ctx.fillRect(x, y, 1, 1);
+  }
+  ctx.restore();
+
+  // ── Pick font size that fills the space nicely ──
+  // Start large, shrink until text fits in roughly 55% of canvas height
+  const MAX_TEXT_H = SIZE * 0.56;
+  let fontSize = 96;
+  let lines = [];
+  while (fontSize >= 32) {
+    ctx.font = `${fnt.style} ${fnt.weight} ${fontSize}px "${fnt.family}", Georgia, serif`;
+    lines = wrapText(ctx, text, INNER_W);
+    const textH = lines.length * fontSize * fnt.lh;
+    if (textH <= MAX_TEXT_H) break;
+    fontSize -= 4;
+  }
+
+  // ── Quote text ──
+  ctx.fillStyle = textColor;
+  ctx.font = `${fnt.style} ${fnt.weight} ${fontSize}px "${fnt.family}", Georgia, serif`;
+  ctx.textBaseline = 'top';
+
+  // Vertically centre the text block in the upper 65% of the canvas
+  const textBlockH = lines.length * fontSize * fnt.lh;
+  const topY = (SIZE * 0.65 - textBlockH) / 2;
+
+  lines.forEach((line, i) => {
+    ctx.fillText(line, PAD, topY + i * fontSize * fnt.lh);
+  });
+
+  // ── Gold rule ──
+  const metaY = topY + textBlockH + 40;
+  ctx.fillStyle = ruleColor;
+  ctx.fillRect(PAD, metaY, 36, 1.5);
+
+  // ── Author ──
+  const auY = metaY + 14;
+  ctx.font = `400 22px "DM Mono", monospace`;
+  ctx.fillStyle = goldColor;
+  ctx.letterSpacing = '2px';
+  ctx.fillText(q.a.toUpperCase(), PAD, auY);
+
+  // ── Source tag (if exists) ──
+  if (q.s) {
+    ctx.font = `400 18px "DM Mono", monospace`;
+    ctx.globalAlpha = 0.45;
+    ctx.fillText(q.s.toUpperCase(), PAD, auY + 34);
+    ctx.globalAlpha = 1;
+  }
+
+  // ── Verbatim watermark (bottom right) ──
+  ctx.font = `700 20px "Oswald", sans-serif`;
+  ctx.fillStyle = goldColor;
+  ctx.globalAlpha = 0.4;
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText('VERBATIM', SIZE - PAD, SIZE - PAD);
+  ctx.globalAlpha = 1;
+  ctx.textAlign = 'left';
+
+  return canvas;
+}
+
+async function shareQuoteImage() {
+  if (!currentLBQuote) return;
+
+  showToast('Preparing image…');
+
+  try {
+    await ensureFontsLoaded();
+    const canvas = await renderQuoteImage(currentLBQuote, currentLBVo, currentLBBg);
+    const siteUrl = 'https://verbatim-quote.vercel.app';
+
+    // Export canvas → blob → File
+    const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+    const file = new File([blob], 'verbatim-quote.png', { type: 'image/png' });
+
+    // Try native share with image file (iOS 15+, Android Chrome)
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({
+        title: 'Verbatim',
+        text: `Explore the wall → ${siteUrl}`,
+        files: [file],
+      });
+    }
+    // Fallback: share just the URL + text (no image)
+    else if (navigator.share) {
+      await navigator.share({
+        title: 'Verbatim',
+        text: `"${currentLBQuote.t}" — ${currentLBQuote.a}\n\nExplore the wall → ${siteUrl}`,
+        url: siteUrl,
+      });
+    }
+    // Desktop fallback: download the image
+    else {
+      const url = URL.createObjectURL(blob);
+      const a   = document.createElement('a');
+      a.href     = url;
+      a.download = 'verbatim-quote.png';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 3000);
+      showToast('Image downloaded');
+    }
+  } catch (err) {
+    if (err.name !== 'AbortError') showToast('Could not share');
+  }
+}
+
+document.getElementById('lb-share').addEventListener('click', shareQuoteImage);
 
 // Copy
 document.getElementById('lb-copy').addEventListener('click',async()=>{
